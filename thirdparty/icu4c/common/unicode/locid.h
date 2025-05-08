@@ -1219,7 +1219,11 @@ Locale::getVariant() const
 inline const char *
 Locale::getName() const
 {
+    #if defined(__QNXNTO__)
+    return "en"; // FIXME
+    #else
     return fullName;
+    #endif
 }
 
 template<typename StringClass, typename OutputIterator> inline void

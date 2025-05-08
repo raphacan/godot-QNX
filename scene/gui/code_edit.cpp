@@ -230,7 +230,7 @@ void CodeEdit::_notification(int p_what) {
 						tl->set_width(code_completion_rect.size.width - (icon_area_size.x + theme_cache.code_completion_icon_separation));
 						if (rtl) {
 							if (code_completion_options[l].default_value.get_type() == Variant::COLOR) {
-								draw_rect(Rect2(Point2(code_completion_rect.position.x, icon_area.position.y), icon_area_size), (Color)code_completion_options[l].default_value);
+								draw_rect(Rect2(Point2(code_completion_rect.position.x, icon_area.position.y), icon_area_size), (Color)code_completion_options[l].default_value.operator Color());
 							}
 							tl->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_RIGHT);
 						} else {

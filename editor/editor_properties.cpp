@@ -2599,7 +2599,7 @@ void EditorPropertyColor::_color_changed(const Color &p_color) {
 	}
 
 	// Cancel the color change if the current color is identical to the new one.
-	if (((Color)get_edited_property_value()).is_equal_approx(p_color)) {
+	if ((get_edited_property_value().operator Color()).is_equal_approx(p_color)) {
 		return;
 	}
 

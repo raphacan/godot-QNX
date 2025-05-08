@@ -1375,7 +1375,7 @@ void GridMap::navmesh_parse_source_geometry(const Ref<NavigationMesh> &p_navigat
 		for (int i = 0; i < meshes.size(); i += 2) {
 			Ref<Mesh> mesh = meshes[i + 1];
 			if (mesh.is_valid()) {
-				p_source_geometry_data->add_mesh(mesh, xform * (Transform3D)meshes[i]);
+				p_source_geometry_data->add_mesh(mesh, xform * meshes[i].operator Transform3D());
 			}
 		}
 	}

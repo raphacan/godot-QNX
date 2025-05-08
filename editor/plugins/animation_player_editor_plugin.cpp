@@ -1787,7 +1787,7 @@ void AnimationPlayerEditor::_prepare_onion_layers_2_prolog() {
 	onion.capture.material->set_shader_parameter("bkg_color", GLOBAL_GET("rendering/environment/defaults/default_clear_color"));
 	onion.capture.material->set_shader_parameter("differences_only", onion.differences_only);
 	onion.capture.material->set_shader_parameter("present", onion.differences_only ? RS::get_singleton()->viewport_get_texture(present_rid) : RID());
-	onion.capture.material->set_shader_parameter("dir_color", onion.force_white_modulate ? Color(1, 1, 1) : Color(EDITOR_GET("editors/animation/onion_layers_past_color")));
+	onion.capture.material->set_shader_parameter("dir_color", onion.force_white_modulate ? Color(1, 1, 1) : Color(EDITOR_GET("editors/animation/onion_layers_past_color").operator Color()));
 
 	uint32_t p_capture_idx = 0;
 	int first_step_offset = onion.past ? -(int)onion.steps : 0;
@@ -1961,7 +1961,7 @@ bool AnimationPlayerEditor::_validate_tracks(const Ref<Animation> p_anim) {
 				} break;
 				case Variant::TRANSFORM3D: {
 					for (int j = 0; j < key_len; j++) {
-						Transform3D t = Transform3D(p_anim->track_get_key_value(i, j));
+						Transform3D t = Transform3D(p_anim->track_get_key_value(i, j).operator Transform3D());
 						if (!t.basis.orthonormalized().is_rotation()) {
 							is_valid = false;
 							ERR_BREAK_EDMSG(true, "AnimationPlayer: '" + player->get_name() + "', Animation: '" + player->get_current_animation() + "', Value Track:  '" + p_anim->track_get_path(i) + "' contains corrupted basis (some axes are too close other axis or scaled by zero) Transform3D key.");

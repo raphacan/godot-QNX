@@ -1587,7 +1587,7 @@ struct VariantTypeConstructor {
 
 	_FORCE_INLINE_ static void type_from_variant(void *r_value, void *p_variant) {
 		// r_value is provided by caller as uninitialized memory
-		memnew_placement(r_value, T(*reinterpret_cast<Variant *>(p_variant)));
+		memnew_placement(r_value, T((*reinterpret_cast<Variant *>(p_variant)).operator T()));
 	}
 };
 

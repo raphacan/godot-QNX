@@ -11,6 +11,11 @@
  * mbedtls_config.h, which pulls in glibc's features.h. Harmless on other platforms
  * except OpenBSD, where it stops us accessing explicit_bzero.
  */
+#if defined(__QNXNTO__)
+// Needed for _POSIX_VERSION
+#include <unistd.h>
+#endif
+
 #if !defined(_POSIX_C_SOURCE) && !defined(__OpenBSD__)
 #define _POSIX_C_SOURCE 200112L
 #endif

@@ -623,7 +623,7 @@ if cc_version_major == -1:
         "Build may fail if the compiler doesn't support C++17 fully."
     )
 elif methods.using_gcc(env):
-    if cc_version_major < 9:
+    if cc_version_major < 8: # QNX SDP 7.1
         print_error(
             "Detected GCC version older than 9, which does not fully support "
             "C++17, or has bugs when compiling Godot. Supported versions are 9 "

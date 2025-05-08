@@ -37,7 +37,7 @@
 #include "config.h"
 #include "utilities.h"
 
-#ifdef ANDROID_ENABLED
+#if defined(ANDROID_ENABLED) || defined(QNX_ENABLED)
 #define glFramebufferTextureMultiviewOVR GLES3::Config::get_singleton()->eglFramebufferTextureMultiviewOVR
 #endif
 

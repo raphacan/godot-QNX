@@ -243,7 +243,7 @@ namespace basisu
 	{
 		QueryPerformanceFrequency(reinterpret_cast<LARGE_INTEGER*>(pTicks));
 	}
-#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__EMSCRIPTEN__)
+#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__EMSCRIPTEN__) || defined(__QNXNTO__)
 #include <sys/time.h>
 	inline void query_counter(timer_ticks* pTicks)
 	{
