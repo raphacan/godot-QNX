@@ -557,7 +557,7 @@ void VisualShaderNodeParticleMeshEmitter::_update_textures() {
 			if (surface_arrays_size > Mesh::ARRAY_COLOR) {
 				Array color_array = surface_arrays[Mesh::ARRAY_COLOR];
 				for (int j = 0; j < color_array.size(); j++) {
-					colors.push_back((Color)color_array[j]);
+					colors.push_back((Color)color_array[j].operator Color());
 				}
 			}
 
@@ -602,7 +602,7 @@ void VisualShaderNodeParticleMeshEmitter::_update_textures() {
 			if (surface_arrays_size > Mesh::ARRAY_COLOR) {
 				Array color_array = surface_arrays[Mesh::ARRAY_COLOR];
 				for (int i = 0; i < color_array.size(); i++) {
-					colors.push_back((Color)color_array[i]);
+					colors.push_back((Color)color_array[i].operator Color());
 				}
 			}
 

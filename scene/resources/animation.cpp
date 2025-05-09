@@ -5668,7 +5668,7 @@ Variant Animation::cast_from_blendwise(const Variant p_value, const Variant::Typ
 			return array_to_string(p_value);
 		} break;
 		case Variant::STRING_NAME: {
-			return StringName(array_to_string(p_value));
+			return StringName(array_to_string(p_value).operator StringName());
 		} break;
 		case Variant::RECT2I: {
 			return Rect2i(p_value.operator Rect2().round());

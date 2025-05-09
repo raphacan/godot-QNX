@@ -92,7 +92,7 @@ public:
 		void (*term)() = nullptr;
 	};
 
-#if defined(__cpp_lib_hardware_interference_size) && !defined(ANDROID_ENABLED) // This would be OK with NDK >= 26.
+#if defined(__cpp_lib_hardware_interference_size) && !defined(QNX_ENABLED) && !defined(ANDROID_ENABLED) // This would be OK with NDK >= 26.
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Winterference-size"

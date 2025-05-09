@@ -1202,35 +1202,35 @@ bool Node3D::_property_get_revert(const StringName &p_name, Variant &r_property)
 	if (sname == "basis") {
 		Variant variant = PropertyUtils::get_property_default_value(this, "transform", &valid);
 		if (valid && variant.get_type() == Variant::Type::TRANSFORM3D) {
-			r_property = Transform3D(variant).get_basis();
+			r_property = (variant.operator Transform3D()).get_basis();
 		} else {
 			r_property = Basis();
 		}
 	} else if (sname == "scale") {
 		Variant variant = PropertyUtils::get_property_default_value(this, "transform", &valid);
 		if (valid && variant.get_type() == Variant::Type::TRANSFORM3D) {
-			r_property = Transform3D(variant).get_basis().get_scale();
+			r_property = (variant.operator Transform3D()).get_basis().get_scale();
 		} else {
 			r_property = Vector3(1.0, 1.0, 1.0);
 		}
 	} else if (sname == "quaternion") {
 		Variant variant = PropertyUtils::get_property_default_value(this, "transform", &valid);
 		if (valid && variant.get_type() == Variant::Type::TRANSFORM3D) {
-			r_property = Quaternion(Transform3D(variant).get_basis().get_rotation_quaternion());
+			r_property = Quaternion((variant.operator Transform3D()).get_basis().get_rotation_quaternion());
 		} else {
 			r_property = Quaternion();
 		}
 	} else if (sname == "rotation") {
 		Variant variant = PropertyUtils::get_property_default_value(this, "transform", &valid);
 		if (valid && variant.get_type() == Variant::Type::TRANSFORM3D) {
-			r_property = Transform3D(variant).get_basis().get_euler_normalized(data.euler_rotation_order);
+			r_property = (variant.operator Transform3D()).get_basis().get_euler_normalized(data.euler_rotation_order);
 		} else {
 			r_property = Vector3();
 		}
 	} else if (sname == "position") {
 		Variant variant = PropertyUtils::get_property_default_value(this, "transform", &valid);
 		if (valid) {
-			r_property = Transform3D(variant).get_origin();
+			r_property = (variant.operator Transform3D()).get_origin();
 		} else {
 			r_property = Vector3();
 		}

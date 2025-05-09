@@ -594,7 +594,7 @@ void Polygon2D::_set_bones(const Array &p_bones) {
 	clear_bones();
 	for (int i = 0; i < p_bones.size(); i += 2) {
 		// Convert back from String to NodePath.
-		add_bone(NodePath(p_bones[i]), p_bones[i + 1]);
+		add_bone(NodePath(p_bones[i].operator NodePath()), p_bones[i + 1]);
 	}
 }
 

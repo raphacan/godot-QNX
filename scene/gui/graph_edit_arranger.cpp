@@ -117,7 +117,7 @@ void GraphEditArranger::arrange_nodes() {
 		sink[E] = E;
 		shift[E] = FLT_MAX;
 		new_positions.insert(E, default_position);
-		if ((StringName)root[E] == E) {
+		if ((StringName)root[E].operator StringName() == E) {
 			block_heads.insert(E);
 		}
 	}
@@ -395,7 +395,7 @@ void GraphEditArranger::_calculate_inner_shifts(Dictionary &r_inner_shifts, cons
 		real_t left = 0;
 		StringName u = E;
 		StringName v = r_align[u];
-		while (u != v && (StringName)r_root[u] != v) {
+		while (u != v && (StringName)r_root[u].operator StringName() != v) {
 			String _connection = String(u) + " " + String(v);
 
 			GraphNode *gnode_from = Object::cast_to<GraphNode>(r_node_names[u]);
@@ -413,13 +413,13 @@ void GraphEditArranger::_calculate_inner_shifts(Dictionary &r_inner_shifts, cons
 			left = MIN(left, s);
 
 			u = v;
-			v = (StringName)r_align[v];
+			v = (StringName)r_align[v].operator StringName();
 		}
 
 		u = E;
 		do {
 			r_inner_shifts[u] = (real_t)r_inner_shifts[u] - left;
-			u = (StringName)r_align[u];
+			u = (StringName)r_align[u].operator StringName();
 		} while (u != E);
 	}
 }
@@ -468,7 +468,7 @@ float GraphEditArranger::_calculate_threshold(const StringName &p_v, const Strin
 			}
 		}
 	}
-	if (threshold == FLT_MIN && (StringName)r_align[p_w] == p_v) {
+	if (threshold == FLT_MIN && (StringName)r_align[p_w].operator StringName() == p_v) {
 		// This time, pick an outgoing edge and repeat as above!
 		int min_order = MAX_ORDER;
 		Ref<GraphEdit::Connection> outgoing;
@@ -530,7 +530,7 @@ void GraphEditArranger::_place_block(const StringName &p_v, float p_delta, const
 				StringName u = r_root[predecessor];
 				_place_block(u, p_delta, r_layers, r_root, r_align, r_node_name, r_inner_shift, r_sink, r_shift, r_node_positions);
 				threshold = _calculate_threshold(p_v, w, r_node_name, r_layers, r_root, r_align, r_inner_shift, threshold, r_node_positions);
-				if ((StringName)r_sink[p_v] == p_v) {
+				if ((StringName)r_sink[p_v].operator StringName() == p_v) {
 					r_sink[p_v] = r_sink[u];
 				}
 

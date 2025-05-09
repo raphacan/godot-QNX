@@ -93,7 +93,7 @@ struct ContainerTypeValidate {
 				inout_variant = String(inout_variant);
 				return true;
 			} else if (type == Variant::STRING_NAME && inout_variant.get_type() == Variant::STRING) {
-				inout_variant = StringName(inout_variant);
+				inout_variant = StringName(inout_variant.operator StringName());
 				return true;
 			} else if (type == Variant::FLOAT && inout_variant.get_type() == Variant::INT) {
 				inout_variant = (float)inout_variant;
