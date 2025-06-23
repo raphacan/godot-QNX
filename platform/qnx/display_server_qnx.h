@@ -68,7 +68,7 @@
 #undef CursorShape
 
 class DisplayServerQnx : public DisplayServer {
-	
+	GDCLASS(DisplayServerQnx, DisplayServer)
 	// Input events
 	struct TouchPos {
 		int id = 0;
@@ -85,7 +85,7 @@ class DisplayServerQnx : public DisplayServer {
 public:
 	static DisplayServerQnx *get_singleton();
 
-	screen_context_t getScreenContext();
+	uint64_t getScreenContext(); // return type needed for gdextension
 
 	virtual bool has_feature(Feature p_feature) const override;
 
@@ -205,6 +205,7 @@ public:
 
 	static void register_qnx_driver();
 
+	DisplayServerQnx(); // needed for gdextension
 	DisplayServerQnx(const String &p_rendering_driver, WindowMode p_mode, VSyncMode p_vsync_mode, uint32_t p_flags, const Vector2i *p_position, const Vector2i &p_resolution, int p_screen, Context p_context, int64_t p_parent_window, Error &r_error);
 	~DisplayServerQnx();
 
@@ -212,6 +213,9 @@ public:
 	static void _dispatch_input_events(const Ref<InputEvent> &p_event);
 	void send_input_event(const Ref<InputEvent> &p_event) const;
 	void _window_callback(const Callable &p_callable, const Variant &p_arg, bool p_deferred = false) const;
+
+protected:
+	static void _bind_methods();
 };
 
 #endif // QNX_ENABLED

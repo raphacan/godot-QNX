@@ -832,7 +832,7 @@ void TextureStorage::texture_external_initialize(RID p_texture, int p_width, int
 	glGenTextures(1, &texture.tex_id);
 	glBindTexture(texture.target, texture.tex_id);
 
-#ifdef ANDROID_ENABLED
+	#if defined(ANDROID_ENABLED) || defined(QNX_ENABLED) 
 	if (texture.target == _GL_TEXTURE_EXTERNAL_OES) {
 		if (p_external_buffer) {
 			GLES3::Config::get_singleton()->eglEGLImageTargetTexture2DOES(_GL_TEXTURE_EXTERNAL_OES, reinterpret_cast<void *>(p_external_buffer));
@@ -1025,7 +1025,7 @@ void TextureStorage::texture_external_update(RID p_texture, int p_width, int p_h
 	tex->alloc_width = tex->width = p_width;
 	tex->alloc_height = tex->height = p_height;
 
-#ifdef ANDROID_ENABLED
+#if defined(ANDROID_ENABLED) || defined(QNX_ENABLED) 
 	if (tex->target == _GL_TEXTURE_EXTERNAL_OES && p_external_buffer) {
 		glBindTexture(_GL_TEXTURE_EXTERNAL_OES, tex->tex_id);
 		GLES3::Config::get_singleton()->eglEGLImageTargetTexture2DOES(_GL_TEXTURE_EXTERNAL_OES, reinterpret_cast<void *>(p_external_buffer));
