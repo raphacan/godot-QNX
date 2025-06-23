@@ -47,7 +47,7 @@ DisplayServerQnx *DisplayServerQnx::get_singleton() {
 	return static_cast<DisplayServerQnx *>(DisplayServer::get_singleton());
 }
 
-screen_context_t DisplayServerQnx::getScreenContext()
+uint64_t DisplayServerQnx::getScreenContext()
 {
 	screen_context_t l_context = nullptr;
 	RenderingContextDriverVulkanScreen* l_vulkanContext = dynamic_cast<RenderingContextDriverVulkanScreen*>(rendering_context);
@@ -63,7 +63,7 @@ screen_context_t DisplayServerQnx::getScreenContext()
 	{
 		WARN_PRINT(vformat("DisplayServerQnx::getScreenContext() Could not get a screen context"));	
 	}
-	return l_context;
+	return (uint64_t)l_context;
 }
 
 
@@ -518,6 +518,15 @@ DisplayServer *DisplayServerQnx::create_func(const String &p_rendering_driver, W
 	}
 	return ds;
 }
+
+DisplayServerQnx::DisplayServerQnx(){
+	// empty on purpose: only for gdextension
+}
+
+void DisplayServerQnx::_bind_methods(){
+	ClassDB::bind_method(D_METHOD("getScreenContext"), &DisplayServerQnx::getScreenContext);
+}
+
 
 DisplayServerQnx::DisplayServerQnx(const String &p_rendering_driver, WindowMode p_mode, VSyncMode p_vsync_mode, uint32_t p_flags, const Vector2i *p_position, const Vector2i &p_resolution, int p_screen, Context p_context, int64_t p_parent_window, Error &r_error) {	
 	r_error = ERR_UNAVAILABLE;
