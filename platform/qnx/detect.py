@@ -70,6 +70,12 @@ def get_flags():
         "supported": ["mono"],
     }
 
+def get_env_qnx_host():
+    return os.environ.get("QNX_HOST", "")
+
+def get_env_qnx_target():
+    return os.environ.get("QNX_TARGET", "")
+
 
 def configure(env: "SConsEnvironment"):
     # Validate arch.
@@ -84,31 +90,28 @@ def configure(env: "SConsEnvironment"):
         env.Append(LINKFLAGS=["-rdynamic"])
 
     # Cross-compilation
-    # TODO: Support cross-compilation on architectures other than x86.
-    host_is_64_bit = sys.maxsize > 2**32
-    if host_is_64_bit and env["arch"] == "x86_32":
-        env.Append(CCFLAGS=["-m32"])
-        env.Append(LINKFLAGS=["-m32"])
-    elif not host_is_64_bit and env["arch"] == "x86_64":
-        env.Append(CCFLAGS=["-m64"])
-        env.Append(LINKFLAGS=["-m64"])
+    qnx_host = get_env_qnx_host()
+    qnx_target = get_env_qnx_target()
 
-    # CPU architecture flags.
-    if env["arch"] == "rv64":
-        # G = General-purpose extensions, C = Compression extension (very common).
-        env.Append(CCFLAGS=["-march=rv64gc"])
+    compiler_path = qnx_host + "/usr/bin"
+
+    env["ENV"]["PATH"] = compiler_path + ":" + env["ENV"]["PATH"]
+    env["ENV"]["QNX_HOST"] = qnx_host
+    env["ENV"]["QNX_TARGET"] = qnx_target
+
+    if env["arch"] == "arm32":
+        cross_compile = "ntoarmv7"
+    elif env["arch"] == "arm64":
+        cross_compile = "ntoaarch64"
+    elif env["arch"] == "x86_32":
+        cross_compile = "ntox86"
+    elif env["arch"] == "x86_64":
+        cross_compile = "ntox86_64"
 
     ## Compiler configuration
+    env["CC"] = f"{compiler_path}/{cross_compile}-gcc"
+    env["CXX"] = f"{compiler_path}/{cross_compile}-g++"
 
-    if "CXX" in env and "clang" in os.path.basename(env["CXX"]):
-        # Convenience check to enforce the use_llvm overrides when CXX is clang(++)
-        env["use_llvm"] = True
-
-    if env["use_llvm"]:
-        if "clang++" not in os.path.basename(env["CXX"]):
-            env["CC"] = "clang"
-            env["CXX"] = "clang++"
-        env.extra_suffix = ".llvm" + env.extra_suffix
 
     if env["linker"] != "default":
         print("Using linker program: " + env["linker"])
