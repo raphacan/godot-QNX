@@ -21,13 +21,15 @@
 # 100daysummer <bobbydochev@gmail.com>, 2023, 2024.
 # Филип Узунов <filkata@gmail.com>, 2024.
 # "П@₿€л" <pavel.veselinov.georgiev@gmail.com>, 2024.
+# Макар Разин <makarrazin14@gmail.com>, 2025.
+# Ivan Dortulov <ivandortulov@yahoo.com>, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: Godot Engine editor interface\n"
 "Report-Msgid-Bugs-To: https://github.com/godotengine/godot\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2024-10-02 07:34+0000\n"
-"Last-Translator: \"П@₿€л\" <pavel.veselinov.georgiev@gmail.com>\n"
+"PO-Revision-Date: 2025-06-03 10:16+0000\n"
+"Last-Translator: Ivan Dortulov <ivandortulov@yahoo.com>\n"
 "Language-Team: Bulgarian <https://hosted.weblate.org/projects/godot-engine/"
 "godot/bg/>\n"
 "Language: bg\n"
@@ -35,7 +37,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.8-dev\n"
+"X-Generator: Weblate 5.12-dev\n"
 
 msgid "Main Thread"
 msgstr "Главна нишка"
@@ -117,6 +119,21 @@ msgstr "Неизвестна ос на джойпада"
 
 msgid "Joypad Motion on Axis %d (%s) with Value %.2f"
 msgstr "Движение на джойстика по ос %d (%s) със стойност %.2f"
+
+msgid "Bottom Action, Sony Cross, Xbox A, Nintendo B"
+msgstr "Действие надолу, Sony: Кръг, Xbox: A, Nintendo: B"
+
+msgid "Right Action, Sony Circle, Xbox B, Nintendo A"
+msgstr "Дясно действие, Sony Кръг, Xbox B, Nintento A"
+
+msgid "Left Action, Sony Square, Xbox X, Nintendo Y"
+msgstr "Ляво действие, Sony Квадрат, Xbox A, Nintento B"
+
+msgid "Top Action, Sony Triangle, Xbox Y, Nintendo X"
+msgstr "Действие нагоре, Sony Триъгълник, Xbox Y, Nintendo X"
+
+msgid "Back, Sony Select, Xbox Back, Nintendo -"
+msgstr "Назад, Sony Селект, Xbox назад, Nintendo -"
 
 msgid "Guide, Sony PS, Xbox Home"
 msgstr "Ръководство, Sony PS, Xbox Начало"
@@ -326,6 +343,12 @@ msgstr "Курсор в началото на документа"
 msgid "Caret Document End"
 msgstr "Курсор в края документа"
 
+msgid "Caret Add Below"
+msgstr "Курсор добавяне отдолу"
+
+msgid "Caret Add Above"
+msgstr "Курсор добавяне отгоре"
+
 msgid "Scroll Up"
 msgstr "Превъртане нагоре"
 
@@ -341,11 +364,17 @@ msgstr "Избиране на думата под курсора"
 msgid "Add Selection for Next Occurrence"
 msgstr "Добавяне на следващото срещане към избраното"
 
+msgid "Skip Selection for Next Occurrence"
+msgstr "Пропускане на следващото срещане"
+
 msgid "Clear Carets and Selection"
 msgstr "Изчистване на курсорите и избраното"
 
 msgid "Toggle Insert Mode"
 msgstr "Превключване на режима на вмъкване"
+
+msgid "Submit Text"
+msgstr "Изпращане на текст"
 
 msgid "Duplicate Nodes"
 msgstr "Дублиране на обектите"
@@ -353,11 +382,20 @@ msgstr "Дублиране на обектите"
 msgid "Delete Nodes"
 msgstr "Изтриване на обектите"
 
+msgid "Go Up One Level"
+msgstr "Качване едно ниво по-нагоре"
+
+msgid "Refresh"
+msgstr "Опресни"
+
 msgid "Show Hidden"
 msgstr "Показване на скритите"
 
 msgid "Swap Input Direction"
 msgstr "Промяна на направлението на въвеждане"
+
+msgid "Start Unicode Character Input"
+msgstr "Въвеждане на Unicode символ"
 
 msgid "Invalid input %d (not passed) in expression"
 msgstr "Неправилен входен параметър %d (не е подаден) в израза"
@@ -418,11 +456,17 @@ msgstr ""
 msgid "An action with the name '%s' already exists."
 msgstr "Вече съществува действие с името „%s“."
 
+msgid "Cannot Revert - Action is same as initial"
+msgstr "Отмяната е невъзможна – действието е същото като началното"
+
 msgid "Revert Action"
 msgstr "Отмяна на действието"
 
 msgid "Add Event"
 msgstr "Добавяне на събитие"
+
+msgid "Remove Action"
+msgstr "Премахване на действие"
 
 msgid "Cannot Remove Action"
 msgstr "Действието не може да се премахне"
@@ -448,8 +492,14 @@ msgstr "Добавяне на ново действие"
 msgid "Add"
 msgstr "Добавяне"
 
+msgid "Show Built-in Actions"
+msgstr "Показвай вградените действия"
+
 msgid "Action"
 msgstr "Действие"
+
+msgid "Deadzone"
+msgstr "Мъртва зона"
 
 msgid "Name:"
 msgstr "Име:"
@@ -457,8 +507,25 @@ msgstr "Име:"
 msgid "Type:"
 msgstr "Тип:"
 
+msgid "Metadata name is valid."
+msgstr "Името на метаданните е валидно."
+
+msgid "Add Metadata Property for \"%s\""
+msgstr "Добавяне на свойство на метаданни за \"%s\""
+
+msgid "Metadata name can't be empty."
+msgstr "Името на метаданните не може да е празно."
+
 msgid "Metadata name must be a valid identifier."
 msgstr "Името на мета-данните трябва да бъде правилен идентификатор."
+
+msgid "Metadata with name \"%s\" already exists."
+msgstr "Вече съществуват метаданни с името „%s“."
+
+msgid "Names starting with _ are reserved for editor-only metadata."
+msgstr ""
+"Имената, започващи с _ , са запазени за метаданни, използвани само от "
+"редактора."
 
 msgid "Time:"
 msgstr "Време:"
@@ -466,11 +533,23 @@ msgstr "Време:"
 msgid "Value:"
 msgstr "Стойност:"
 
+msgid "Update Selected Key Handles"
+msgstr "Обновяване на избраните контролни точки"
+
 msgid "Insert Key Here"
 msgstr "Вмъкване на ключ тук"
 
 msgid "Duplicate Selected Key(s)"
 msgstr "Дупликат на избран(и) ключ(ове)"
+
+msgid "Cut Selected Key(s)"
+msgstr "Изрязване на избран(и) ключ(ове)"
+
+msgid "Copy Selected Key(s)"
+msgstr "Копиране на избран(и) ключ(ове)"
+
+msgid "Paste Key(s)"
+msgstr "Поставяне на избран(и) ключ(ове)"
 
 msgid "Delete Selected Key(s)"
 msgstr "Изтриване на избран(и) ключ(ове)"
@@ -3925,6 +4004,19 @@ msgstr "Към следващата точка на прекъсване"
 msgid "Go to Previous Breakpoint"
 msgstr "Към предходната точка на прекъсване"
 
+msgid "Shader Editor"
+msgstr "Редактор на шейдъри"
+
+msgid ""
+"Make the shader editor floating.\n"
+"Right-click to open the screen selector."
+msgstr ""
+"Направете редактора на шейдърите плаващ.\n"
+"Щракнете с десния бутон, за да отворите селекцията на екрана."
+
+msgid "Toggle Shader Editor Bottom Panel"
+msgstr "Активиране или деактивиране на долния панел на редактора на шейдъри"
+
 msgid "Create Rest Pose from Bones"
 msgstr "Създаване на поза на покоя от костите"
 
@@ -4564,6 +4656,9 @@ msgstr "Сканиране за проекти"
 msgid "Loading, please wait..."
 msgstr "Зареждане. Моля, изчакайте…"
 
+msgid "Last Edited"
+msgstr "Последна промяна"
+
 msgid "Create New Project"
 msgstr "Създаване на нов проект"
 
@@ -4610,6 +4705,12 @@ msgstr "Път до проекта:"
 
 msgid "Project Installation Path:"
 msgstr "Път на инсталация на проекта:"
+
+msgid "This project was last edited in a different Godot version: "
+msgstr "Проектът е последно модифициран в друга версия на Godot: "
+
+msgid "Last edited timestamp"
+msgstr "Времева маркировка на последното редактиране"
 
 msgid "Missing Project"
 msgstr "Проектът липсва"
@@ -4828,6 +4929,11 @@ msgstr "Неправилен базов път."
 
 msgid "Wrong extension chosen."
 msgstr "Избрано е грешно разширение."
+
+msgid "Note: Built-in shaders can't be edited using an external editor."
+msgstr ""
+"Забележка: Вградените шейдъри не могат да бъдат редактирани с помощта на "
+"външен редактор."
 
 msgid "Previous Floor"
 msgstr "Предходен под"
@@ -5146,3 +5252,12 @@ msgstr ""
 
 msgid "Constants cannot be modified."
 msgstr "Константите не могат да бъдат променени."
+
+msgid "Macro expansion limit exceeded."
+msgstr "Превишено е ограничението за разширяване на макроси."
+
+msgid "Invalid macro argument list."
+msgstr "Невалиден списък с аргументи на макроса."
+
+msgid "Invalid macro argument."
+msgstr "Невалиден аргумент на макроса."

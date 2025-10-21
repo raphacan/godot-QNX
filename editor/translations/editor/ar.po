@@ -96,13 +96,17 @@
 # Ali al khawaja <ali.al.khuwaja@gmail.com>, 2024.
 # Spirit <spirit@programmer.net>, 2024.
 # Saif El-Din Ahmed <sa435995@gmail.com>, 2025.
+# ابْنُ السَدِيمِ <amarlubs2@gmail.com>, 2025.
+# Zeyad Alsultan <z.t.alsultan@gmail.com>, 2025.
+# TonyxDz <tony23dz@gmail.com>, 2025.
+# Modem Hexagon <nexusnecromance@gmail.com>, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: Godot Engine editor interface\n"
 "Report-Msgid-Bugs-To: https://github.com/godotengine/godot\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2025-02-23 18:34+0000\n"
-"Last-Translator: Saif El-Din Ahmed <sa435995@gmail.com>\n"
+"PO-Revision-Date: 2025-06-03 04:59+0000\n"
+"Last-Translator: Modem Hexagon <nexusnecromance@gmail.com>\n"
 "Language-Team: Arabic <https://hosted.weblate.org/projects/godot-engine/godot/"
 "ar/>\n"
 "Language: ar\n"
@@ -111,7 +115,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && "
 "n%100<=10 ? 3 : n%100>=11 ? 4 : 5;\n"
-"X-Generator: Weblate 5.10.1-dev\n"
+"X-Generator: Weblate 5.12-dev\n"
 
 msgid "Main Thread"
 msgstr "النظيمة الأساسية"
@@ -963,6 +967,9 @@ msgstr ""
 
 msgid "property '%s'"
 msgstr "الخاصية '%s'"
+
+msgid "Nearest FPS: %d"
+msgstr "لأقرب إطار في الثانية :%d"
 
 msgid "Change Animation Step"
 msgstr "تغيير خطوة الحركة"
@@ -2194,6 +2201,9 @@ msgstr ""
 "استعمال العلامات المائلة (سلاش) في المسار سيُنشئ الملف في مجلدات فرعية، يتم "
 "إنشاء مجلدات فرعية لو كان ضارورياً."
 
+msgid "File name is valid."
+msgstr "اسم الملف صالح."
+
 msgid "Base path: %s"
 msgstr "المسار الأساسي: %s"
 
@@ -2992,6 +3002,9 @@ msgstr "جارٍ الإنتهاء من استيراد الأصول..."
 msgid "Executing post-reimport operations..."
 msgstr "جارٍ تنفيذ عمليات ما بعد الاستيراد."
 
+msgid "Copying files..."
+msgstr "نسخ ملفات..."
+
 msgid "This method supports a variable number of arguments."
 msgstr "تدعم هذا الدالة عددا متفاوتاً من المتغيرات."
 
@@ -3015,6 +3028,9 @@ msgid ""
 msgstr ""
 "لا تتطلب هذه الدالة نسخها ليتم استدعاءها.\n"
 "يمكن أن تستدعيها باستعمال اسم الصف class name."
+
+msgid "Code snippet copied to clipboard."
+msgstr "نسخت جزئية البرمجة إلى الحافظة."
 
 msgid "No return value."
 msgstr "لا قيمة عائدة."
@@ -3166,6 +3182,9 @@ msgstr "الأيقونات"
 msgid "Styles"
 msgstr "مظاهر"
 
+msgid "This theme property may be changed or removed in future versions."
+msgstr "هذه الخاصية قد تتغير أو تُزال في الاصدارات المقبلة."
+
 msgid "There is currently no description for this theme property."
 msgstr "خاصية الثِمة هذه لم تُصف بعد."
 
@@ -3243,8 +3262,14 @@ msgstr "المحرّر"
 msgid "Click to copy."
 msgstr "انقر للنسخ ."
 
+msgid "Click to open in browser."
+msgstr "إضغط للفتح في المتصفح."
+
 msgid "No description available."
 msgstr "لا يوجد وصف متاح."
+
+msgid "This annotation may be changed or removed in future versions."
+msgstr "هذه التأشيرة قد تتغير أو تُزال من الإصدارات المقبلة."
 
 msgid "Show in FileSystem"
 msgstr "أظهر في نظام الملفات"
@@ -3258,8 +3283,17 @@ msgstr "قالب"
 msgid "Constant"
 msgstr "ثابت"
 
+msgid "Metadata"
+msgstr "البيانات الوصفية"
+
+msgid "Setting"
+msgstr "الإعدادات:"
+
 msgid "Property"
 msgstr "خاصية"
+
+msgid "Internal Property"
+msgstr "الخاصية الداخلية:"
 
 msgid "This property can only be set in the Inspector."
 msgstr "هذه الخاصية يمكن تعيينها بداخل الفاحص فقط."
@@ -3276,8 +3310,23 @@ msgstr "الإشارة"
 msgid "Annotation"
 msgstr "التوضيح"
 
+msgid "Local Constant"
+msgstr "قيمة ثابتة محلية"
+
+msgid "Local Variable"
+msgstr "مُتغيّر خاص"
+
+msgid "This variable may be changed or removed in future versions."
+msgstr "قد تتغير أو تُحذف هذه القيمة المتغيرة في الإصدارات المُقبلة."
+
+msgid "TextFile"
+msgstr "ملف نصي"
+
 msgid "File"
 msgstr "ملف"
+
+msgid "Directory"
+msgstr "مجلد"
 
 msgid "Invalid UID"
 msgstr "UID غير صالح"
@@ -3563,6 +3612,26 @@ msgstr "رؤية رسائل المُحرر."
 
 msgid "Native Shader Source Inspector"
 msgstr "فاحص مصدر الطيف الأصلي"
+
+msgid ""
+"The Android build template is already installed in this project and it won't "
+"be overwritten.\n"
+"Remove the \"%s\" directory manually before attempting this operation again."
+msgstr ""
+"تم تثبيت قالب البناء الخاص بنظام أندرويد مسبقًا في هذا المشروع، ولن يتم "
+"الكتابة فوقه.\n"
+"يرجى إزالة مجلد \"%s\" يدويًا قبل محاولة تنفيذ هذه العملية مرة أخرى."
+
+msgid ""
+"This will set up your project for gradle Android builds by installing the "
+"source template to \"%s\".\n"
+"Note that in order to make gradle builds instead of using pre-built APKs, the "
+"\"Use Gradle Build\" option should be enabled in the Android export preset."
+msgstr ""
+"سيقوم هذا الإجراء بإعداد مشروعك لبناءات أندرويد باستخدام Gradle عن طريق تثبيت "
+"قالب المصدر في «%s».\n"
+"لاحظ أنه لجعل البناءات تتم بواسطة Gradle بدلاً من استخدام ملفات APK الجاهزة، "
+"يجب تفعيل خيار «استخدام بناء Gradle» في إعداد التصدير الخاص بأندرويد."
 
 msgid "Unnamed Project"
 msgstr "مشروع غير مسمى"
@@ -4375,8 +4444,20 @@ msgstr "تصدير المكتبة"
 msgid "Open & Run a Script"
 msgstr "فتح و تشغيل كود"
 
+msgid "Files have been modified outside Godot"
+msgstr "الملف عُدل خارج جوْدَتْ"
+
 msgid "The following files are newer on disk:"
 msgstr "–الملفات التالية هي الأحدث على القرص."
+
+msgid "What action should be taken?"
+msgstr "ما الإجراء الذي يجب أن يُتخذ؟"
+
+msgid "Reload from disk"
+msgstr "إِعادة تحميل من القرص"
+
+msgid "Ignore external changes"
+msgstr "تجاهل التغيرات الخارجية"
 
 msgid "Create/Override Version Control Metadata..."
 msgstr "إنشاء/تجاوز البيانات الوصفية لإدارة الإصدارات..."
@@ -4401,6 +4482,9 @@ msgstr "فتح المُحرر 3D"
 
 msgid "Open Script Editor"
 msgstr "فتح محرر النص البرمجي"
+
+msgid "Open Game View"
+msgstr "إفتح منظور اللعبة"
 
 msgid "Open Asset Library"
 msgstr "فتح مكتبة المُلحقات"
@@ -4487,6 +4571,17 @@ msgid "Recursion detected, unable to assign resource to property."
 msgstr "تم رصد حالة تكرار، فشل توكيل المورد إلى الخاصية."
 
 msgid ""
+"Can't create a ViewportTexture in a Texture2D node because the texture will "
+"not be bound to a scene.\n"
+"Use a Texture2DParameter node instead and set the texture in the \"Shader "
+"Parameters\" tab."
+msgstr ""
+"لا يمكن إنشاء ViewportTexture في عقدة Texture2D لأنّ هذه الشاشة لن ترتبط "
+"بمشهد.\n"
+"استخدم بدلًا من ذلك عقدة Texture2DParameter وقم بتعيين النسيج في علامة التبويب "
+"“Shader Parameters”."
+
+msgid ""
 "Can't create a ViewportTexture on resources saved as a file.\n"
 "Resource needs to belong to a scene."
 msgstr ""
@@ -4518,6 +4613,12 @@ msgstr "قيمة جديدة:"
 
 msgid "(Nil) %s"
 msgstr "(لا شيء Nil) %s"
+
+msgid "%s%s (size %d)"
+msgstr "%s%s (الحجم%d)"
+
+msgid "%s (size %d)"
+msgstr "%s (الحجم%d)"
 
 msgid "Size:"
 msgstr "الحجم:"
@@ -4584,6 +4685,9 @@ msgstr "توسيع النص البرمجي..."
 msgid "New Shader..."
 msgstr "طيف جديد..."
 
+msgid "Remote Deploy"
+msgstr "النشر عن بُعد"
+
 msgid ""
 "No runnable export preset found for this platform.\n"
 "Please add a runnable preset in the Export menu or define an existing preset "
@@ -4592,6 +4696,28 @@ msgstr ""
 "لا يوجد إعداد تصدير مسبق لهذه المنصة.\n"
 "من فضلك أضفْ إعداد تصدير في قائمة التصدير أو عرف إعداد تصدير موجود كقابل "
 "للتشغيل(عامل)."
+
+msgid ""
+"Warning: The CPU architecture \"%s\" is not active in your export preset.\n"
+"\n"
+msgstr ""
+"تحذير: معمارية المعالج %s ليست نشطة عندك في تجهيزات التصدير.\n"
+"\n"
+
+msgid "Run \"Remote Deploy\" anyway?"
+msgstr "شغّل \"النشر عن بعد\" على أي حال؟"
+
+msgid "Deploy to First Device in List"
+msgstr "أنشر إلى أول جهاز في القائمة"
+
+msgid "Deploy to Second Device in List"
+msgstr "أنشر إلى ثاني جهاز في القائمة"
+
+msgid "Deploy to Third Device in List"
+msgstr "أنشر إلى ثالث جهاز في القائمة"
+
+msgid "Deploy to Fourth Device in List"
+msgstr "أنشر إلى رابع جهاز في القائمة"
 
 msgid "Project Run"
 msgstr "تشغيل المشروع"
@@ -4602,6 +4728,9 @@ msgstr "أكتب منطقك في الطريقة ()run_."
 msgid "The current scene already has a root node."
 msgstr "المشهد الحالي يمتلك بالفعل عقدة رئيسية."
 
+msgid "Advanced settings are always shown when searching."
+msgstr "تظهر الإعدادات المتقدمة دائمًا عند البحث."
+
 msgid "Edit Built-in Action: %s"
 msgstr "تحرير الإجراء المضمن: %s"
 
@@ -4611,8 +4740,14 @@ msgstr "تحرير الاختصار: %s"
 msgid "None"
 msgstr "لا شيء"
 
+msgid "Primary"
+msgstr "أساسي"
+
 msgid "Common"
 msgstr "شائع"
+
+msgid "Event %d"
+msgstr "الحدث %d"
 
 msgid "Editor Settings"
 msgstr "إعدادات المُحرر"
@@ -4823,6 +4958,20 @@ msgstr "تخزين الملف:"
 
 msgid "No export template found at the expected path:"
 msgstr "ما فيه قالب تصدير في المسار المتوقع:"
+
+msgid ""
+"Using user provided text server data, text display in the exported project "
+"might be broken if export template was built with different ICU version!"
+msgstr ""
+"باستخدام بيانات خادم النص المزوّدة من المستخدم، قد يتعطل عرض النص في المشروع "
+"المُصدّر إذا كان قالب التصدير مُجمّعًا بإصدار ICU مختلف!"
+
+msgid ""
+"Using editor embedded text server data, text display in the exported project "
+"might be broken if export template was built with different ICU version!"
+msgstr ""
+"باستخدام بيانات خادم النص المضمّنة في المحرر، قد يتعطّل عرض النص في المشروع "
+"المُصدّر إذا كان قالب التصدير مبنياً بإصدار مختلف من ICU!"
 
 msgid ""
 "Missing text server data, text display in the exported project might be "
@@ -5094,6 +5243,9 @@ msgstr "تثبيت من ملف"
 
 msgid "Install templates from a local file."
 msgstr "تثبيت القوالب من ملف محلي."
+
+msgid "Online mode is needed to download the templates."
+msgstr "تحتاج وضع الإتصال بالإنترنت لتحميل النماذج."
 
 msgid "Go Online"
 msgstr "الاتصال بالشبكة"
@@ -5442,6 +5594,9 @@ msgstr "خطأ في تحريك:"
 msgid "Error duplicating:"
 msgstr "خطآ في التكرار:"
 
+msgid "Error duplicating directory:"
+msgstr "خطأ في تكرار المجلد:"
+
 msgid "Unable to update dependencies for:"
 msgstr "غير قادر على تحديث التبعيات لـ:"
 
@@ -5465,6 +5620,9 @@ msgstr ""
 msgid "A file or folder with this name already exists."
 msgstr "يوجد ملف أو مجلد بهذا الاسم سابقا."
 
+msgid "Could not create base directory: %s"
+msgstr "تعذر إنشاء مجلد الأساس: \"%s\""
+
 msgid ""
 "The following files or folders conflict with items in the target location "
 "'%s':"
@@ -5478,6 +5636,22 @@ msgstr "هل ترغب بالكتابة فوقهم او تغيير اسم الم�
 msgid "Do you wish to overwrite them or rename the moved files?"
 msgstr "هل ترغب بالكتابة فوقهم او تغيير اسم الملفات المنقولة؟"
 
+msgid ""
+"Couldn't run external program to check for terminal emulator presence: "
+"command -v %s"
+msgstr ""
+"لم يمكن تشغيل البرنامج الخارجي للتأكد من وجود محاكي طرفية حاسوب: اكتب \"-v "
+"%s\""
+
+msgid ""
+"Couldn't run external terminal program (error code %d): %s %s\n"
+"Check `filesystem/external_programs/terminal_emulator` and `filesystem/"
+"external_programs/terminal_emulator_flags` in the Editor Settings."
+msgstr ""
+"لم يمكن تشغيل برنامج طرفية حاسوب (رقم الخظأ %d): %s %s\n"
+"تأكد من `filesystem/external_programs/terminal_emulator` و `filesystem/"
+"external_programs/terminal_emulator_flags`في إعدادات المحرر."
+
 msgid "Duplicating file:"
 msgstr "مضاعفة الملف:"
 
@@ -5486,6 +5660,13 @@ msgstr "تكرار مجلد:"
 
 msgid "Create Folder"
 msgstr "أنشئ مجلد"
+
+msgid ""
+"Do you wish to convert these files to %s? (This operation cannot be undone!)"
+msgstr "أتريد أن تحول هذه الملفات إلى %s؟ (هذه العملية لا يمكن التراجع منها!)"
+
+msgid "Could not create folder: %s"
+msgstr "لا يمكن إنشاء المجلد: %s"
 
 msgid "New Inherited Scene"
 msgstr "مشهد مُوّرَث جديد"
@@ -5547,11 +5728,17 @@ msgstr "إضافة إلى المفضلات"
 msgid "Remove from Favorites"
 msgstr "حذف من المفضلات"
 
+msgid "Convert to..."
+msgstr "حوّلْ إلى..."
+
 msgid "Reimport"
 msgstr "إعادة الاستيراد"
 
 msgid "Open in Terminal"
 msgstr "الفتح في الطرفية"
+
+msgid "Open Folder in Terminal"
+msgstr "فتح المجلد في طرفية حاسوب"
 
 msgid "New Folder..."
 msgstr "مجلد جديد..."
@@ -5662,6 +5849,9 @@ msgstr "احتفظ بكليهما"
 msgid "Create Script"
 msgstr "إنشاء نص برمجي"
 
+msgid "Convert"
+msgstr "حوِّل"
+
 msgid "Find in Files"
 msgstr "البحث في الملفات"
 
@@ -5697,6 +5887,9 @@ msgstr "استبدال الكل (لا رجوع)"
 
 msgid "Searching..."
 msgstr "جاري البحث..."
+
+msgid "Remove result"
+msgstr "إزالة النتيجة"
 
 msgid "%d match in %d file"
 msgstr "%d تطابق في %d ملف"
@@ -5787,6 +5980,24 @@ msgstr "إضافة مجموعة جديدة."
 
 msgid "Filter Groups"
 msgstr "تصفية المجموعات"
+
+msgid ""
+"Scroll Left\n"
+"Hold Ctrl to scroll to the begin.\n"
+"Hold Shift to scroll one page."
+msgstr ""
+"تنقل إلى اليسار\n"
+"أطل الضغط على Ctrl لنقل نفسك للبداية.\n"
+"أطل الضغط على Shift لنقل نفسك لمدى صفحةٍ واحدة."
+
+msgid ""
+"Scroll Right\n"
+"Hold Ctrl to scroll to the end.\n"
+"Hold Shift to scroll one page."
+msgstr ""
+"تنقل إلى اليمين\n"
+"أطل الضغط على Ctrl لنقل نفسك للنهاية.\n"
+"أطل الضغط على Shift لنقل نفسك لمدى صفحةٍ واحدة."
 
 msgid "Expand Bottom Panel"
 msgstr "توسيع القائمة السفلية"
@@ -6050,6 +6261,12 @@ msgstr "إضافات GDExtension"
 msgid "Automatic scene restoring"
 msgstr "استعادة المشهد التلقائي"
 
+msgid "Disable recovery mode and reload the project."
+msgstr "قم بتعطيل وضع الاسترداد وأعد تحميل المشروع."
+
+msgid "Recovery Mode is enabled. Click for more details."
+msgstr "تم تفعيل وضع الاسترداد. انقر للمزيد من التفاصيل."
+
 msgid "Run the project's default scene."
 msgstr "شغّل المشهد الافتراضي للمشروع."
 
@@ -6067,6 +6284,12 @@ msgstr "إيقاف المشروع الجاري."
 
 msgid "Stop Running Project"
 msgstr "أوقِفْ المشروع"
+
+msgid "Run Scene in Regular Mode"
+msgstr "تشغيل المشهد في الوضع العادي"
+
+msgid "Run Scene in XR Mode"
+msgstr "تشغيل المشهد في وضع الواقع الممتد"
 
 msgid "Run the currently edited scene."
 msgstr "شغّلْ المشهد الذي تم تحريره."
@@ -6150,6 +6373,9 @@ msgstr "(الاتصال من)"
 msgid "Node configuration warning:"
 msgstr "تحذير تهيئة العُقدة:"
 
+msgid "Click to disable this."
+msgstr "انقر هنا لتعطيل هذا."
+
 msgid "Node has one connection."
 msgid_plural "Node has {num} connections."
 msgstr[0] "العُقدة غير متصلة بأي اتصال."
@@ -6227,6 +6453,9 @@ msgstr "شجرة المشهد (العُقد):"
 
 msgid "Node Configuration Warning!"
 msgstr "تحذير تهيئة العُقدة!"
+
+msgid "Revoke"
+msgstr "إلغاء"
 
 msgid "Allowed:"
 msgstr "مسموح:"
