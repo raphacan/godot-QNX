@@ -38,7 +38,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#if !defined(__FreeBSD__) && !defined(__OpenBSD__) && !defined(__NetBSD__) && !defined(WEB_ENABLED)
+#if !defined(__FreeBSD__) && !defined(__OpenBSD__) && !defined(__NetBSD__) && !defined(WEB_ENABLED) && !defined(__QNX__)
 #include <sys/xattr.h>
 #endif
 #include <unistd.h>
@@ -514,7 +514,7 @@ PackedByteArray FileAccessUnix::_get_extended_attribute(const String &p_file, co
 
 	String file = fix_path(p_file);
 	PackedByteArray data;
-#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(WEB_ENABLED)
+#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(WEB_ENABLED) || defined(__QNX__)
 	// Not supported.
 #elif defined(__APPLE__)
 	CharString attr_name = p_attribute_name.utf8();
@@ -544,7 +544,7 @@ Error FileAccessUnix::_set_extended_attribute(const String &p_file, const String
 	ERR_FAIL_COND_V(p_attribute_name.is_empty(), FAILED);
 
 	String file = fix_path(p_file);
-#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(WEB_ENABLED)
+#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(WEB_ENABLED) || defined(__QNX__)
 	// Not supported.
 #elif defined(__APPLE__)
 	int err = setxattr(file.utf8().get_data(), p_attribute_name.utf8().get_data(), (const void *)p_data.ptr(), p_data.size(), 0, 0);
@@ -564,7 +564,7 @@ Error FileAccessUnix::_remove_extended_attribute(const String &p_file, const Str
 	ERR_FAIL_COND_V(p_attribute_name.is_empty(), FAILED);
 
 	String file = fix_path(p_file);
-#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(WEB_ENABLED)
+#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(WEB_ENABLED) || defined(__QNX__)
 	// Not supported.
 #elif defined(__APPLE__)
 	int err = removexattr(file.utf8().get_data(), p_attribute_name.utf8().get_data(), 0);
@@ -583,7 +583,7 @@ Error FileAccessUnix::_remove_extended_attribute(const String &p_file, const Str
 PackedStringArray FileAccessUnix::_get_extended_attributes_list(const String &p_file) {
 	PackedStringArray ret;
 	String file = fix_path(p_file);
-#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(WEB_ENABLED)
+#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(WEB_ENABLED) || defined(__QNX__)
 	// Not supported.
 #elif defined(__APPLE__)
 	size_t size = listxattr(file.utf8().get_data(), nullptr, 0, 0);

@@ -66,6 +66,11 @@ extern "C" EGLAPI EGLDisplay EGLAPIENTRY eglGetPlatformDisplayEXT(EGLenum platfo
 #endif
 #endif
 
+#ifdef __QNX__
+// Although EGL 1.5 is available on QNX, the platform extensions do not work
+#define GLAD_EGL_VERSION_1_5 false
+#endif
+
 // Creates and caches a GLDisplay. Returns -1 on error.
 int EGLManager::_get_gldisplay_id(void *p_display) {
 	// Look for a cached GLDisplay.
