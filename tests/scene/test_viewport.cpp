@@ -1179,7 +1179,7 @@ TEST_CASE("[SceneTree][Viewport] Controls and InputEvent handling") {
 				SEND_GUI_MOUSE_BUTTON_RELEASED_EVENT(on_d, MouseButton::LEFT, MouseButtonMask::NONE, Key::NONE);
 				CHECK_FALSE(root->gui_is_dragging());
 				CHECK(root->gui_is_drag_successful());
-				CHECK((StringName)node_d->drag_data == SNAME("Drag Data"));
+				CHECK(node_d->drag_data.operator StringName() == SNAME("Drag Data"));
 			}
 
 			SUBCASE("[Viewport][GuiInputEvent][DnD] Perform unsuccessful drop on Control.") {

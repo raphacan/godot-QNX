@@ -127,8 +127,8 @@ struct [[nodiscard]] Basis {
 	bool is_same(const Basis &p_basis) const;
 	bool is_finite() const;
 
-	constexpr bool operator==(const Basis &p_matrix) const;
-	constexpr bool operator!=(const Basis &p_matrix) const;
+	_FORCE_INLINE_ bool operator==(const Basis &p_matrix) const;
+	_FORCE_INLINE_ bool operator!=(const Basis &p_matrix) const;
 
 	_FORCE_INLINE_ Vector3 xform(const Vector3 &p_vector) const;
 	_FORCE_INLINE_ Vector3 xform_inv(const Vector3 &p_vector) const;
@@ -255,7 +255,7 @@ inline constexpr Basis Basis::FLIP_X = { { -1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } 
 inline constexpr Basis Basis::FLIP_Y = { { 1, 0, 0 }, { 0, -1, 0 }, { 0, 0, 1 } };
 inline constexpr Basis Basis::FLIP_Z = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, -1 } };
 
-constexpr bool Basis::operator==(const Basis &p_matrix) const {
+_FORCE_INLINE_ bool Basis::operator==(const Basis &p_matrix) const {
 	for (int i = 0; i < 3; i++) {
 		for (int j = 0; j < 3; j++) {
 			if (rows[i][j] != p_matrix.rows[i][j]) {
@@ -267,7 +267,7 @@ constexpr bool Basis::operator==(const Basis &p_matrix) const {
 	return true;
 }
 
-constexpr bool Basis::operator!=(const Basis &p_matrix) const {
+_FORCE_INLINE_ bool Basis::operator!=(const Basis &p_matrix) const {
 	return (!(*this == p_matrix));
 }
 

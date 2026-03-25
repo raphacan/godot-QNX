@@ -669,7 +669,7 @@ void ScriptTextEditor::_inline_object_draw(const Dictionary &p_info, const Rect2
 		RID text_ci = code_editor->get_text_editor()->get_text_canvas_item();
 		RS::get_singleton()->canvas_item_add_rect(text_ci, p_rect.grow(-3), Color(1, 1, 1));
 		color_alpha_texture->draw_rect(text_ci, col_rect);
-		RS::get_singleton()->canvas_item_add_rect(text_ci, col_rect, Color(p_info["color"]));
+		RS::get_singleton()->canvas_item_add_rect(text_ci, col_rect, p_info["color"].operator Color());
 	}
 }
 

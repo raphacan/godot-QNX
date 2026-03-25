@@ -719,7 +719,7 @@ if cc_version_major == -1:
         "Couldn't detect compiler version, skipping version checks. Build may fail if the compiler doesn't support C++17 fully."
     )
 elif methods.using_gcc(env):
-    if cc_version_major < 11:
+    if cc_version_major < 8:  # QNX SDP 7.1
         print_error(
             f'Detected GCC version {cc_version_major} while Godot requires GCC 11 or newer. Use a newer GCC version, or Clang 9 or newer by passing "use_llvm=yes" to the SCons command line.'
         )
