@@ -905,8 +905,8 @@ bool AnimationMixer::_update_caches() {
 						track_audio->object_id = child->get_instance_id();
 						track_audio->audio_stream.instantiate();
 						track_audio->audio_stream->set_polyphony(audio_max_polyphony);
-						track_audio->playback_type = (AudioServer::PlaybackType)(int)(child->call(SNAME("get_playback_type")));
-						track_audio->bus = (StringName)(child->call(SNAME("get_bus")));
+						track_audio->playback_type = (AuSE::PlaybackType)(int)(child->call(SNAME("get_playback_type")));
+						track_audio->bus = (child->call(SNAME("get_bus")).operator StringName());
 
 						track = track_audio;
 

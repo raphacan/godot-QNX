@@ -73,7 +73,7 @@ antiAliasing = false
 			String(config_file.get_value("player", "tagline")) == "Waiting\nfor\nGodot",
 			"Reading `player/tagline` should return the expected value.");
 	CHECK_MESSAGE(
-			Color(config_file.get_value("player", "color")).is_equal_approx(Color(0, 0.5, 1)),
+			config_file.get_value("player", "color").operator Color().is_equal_approx(Color(0, 0.5, 1)),
 			"Reading `player/color` should return the expected value.");
 	CHECK_MESSAGE(
 			Vector2(config_file.get_value("player", "position")).is_equal_approx(Vector2(3, 4)),

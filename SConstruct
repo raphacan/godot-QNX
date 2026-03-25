@@ -731,10 +731,10 @@ elif methods.using_gcc(env):
             )
             Exit(255)
     else:
-        if cc_version_major < 9:
+        if cc_version_major < 8:  # QNX SDP 7.1
             print_error(
-                "Detected GCC version older than 9, which does not fully support "
-                "C++17, or has bugs when compiling Godot. Supported versions are 9 "
+                "Detected GCC version older than 8, which does not fully support "
+                "C++17, or has bugs when compiling Godot. Supported versions are 8 "
                 "and later. Use a newer GCC version, or Clang 6 or later by passing "
                 '"use_llvm=yes" to the SCons command line.'
             )
