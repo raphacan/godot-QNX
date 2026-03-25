@@ -3031,6 +3031,11 @@
 			- [code]opengl3[/code] (default), OpenGL 3.3 from native drivers. If [member rendering/gl_compatibility/fallback_to_native] is enabled, this is used as a fallback if ANGLE is configured as the preferred driver but not supported.
 			- [code]opengl3_angle[/code], OpenGL ES 3.0 using the ANGLE compatibility layer over native OpenGL drivers. If [member rendering/gl_compatibility/fallback_to_angle] is enabled, this is used as a fallback if OpenGL 3.3 is not supported.
 		</member>
+		<member name="rendering/gl_compatibility/driver.qnx" type="String" setter="" getter="" default="&quot;opengl3&quot;">
+			QNX override for [member rendering/gl_compatibility/driver].
+			Only one option is supported:
+			- [code]opengl3[/code], OpenGL ES 3.0 from native drivers.
+		</member>
 		<member name="rendering/gl_compatibility/driver.web" type="String" setter="" getter="" default="&quot;opengl3&quot;">
 			Web override for [member rendering/gl_compatibility/driver].
 			Only one option is supported:
@@ -3350,6 +3355,12 @@
 			Two options are supported:
 			- [code]metal[/code] (default), Metal from native drivers, only supported on Apple Silicon Macs. On Intel Macs, it will automatically fall back to [code]vulkan[/code] as Metal support is not implemented.
 			- [code]vulkan[/code], Vulkan over Metal via MoltenVK, supported on both Apple Silicon and Intel Macs.
+		</member>
+		<member name="rendering/rendering_device/driver.qnx" type="String" setter="" getter="" default="&quot;vulkan&quot;">
+			QNX override for [member rendering/rendering_device/driver].
+			Only one option is supported:
+			- [code]vulkan[/code], Vulkan from native drivers.
+			[b]Note:[/b] If Vulkan was disabled at compile time, there is no alternative RenderingDevice driver.
 		</member>
 		<member name="rendering/rendering_device/driver.visionos" type="String" setter="" getter="" default="&quot;metal&quot;">
 			visionOS override for [member rendering/rendering_device/driver].
