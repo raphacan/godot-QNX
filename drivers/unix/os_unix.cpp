@@ -1205,14 +1205,14 @@ String OS_Unix::get_executable_path() const {
 
 	return path;
 #elif defined(__QNX__)
-    char buf[MAXPATHLEN];
-    int fd = open("/proc/self/exefile", O_RDONLY);
+	char buf[MAXPATHLEN];
+	int fd = open("/proc/self/exefile", O_RDONLY);
 	ssize_t len = read(fd, buf, sizeof(buf));
 	String b;
-    if (len > 0) {
-        b.append_utf8(buf, len);
-    }
-    close(fd);
+	if (len > 0) {
+		b.append_utf8(buf, len);
+	}
+	close(fd);
 	if (b.is_empty()) {
 		WARN_PRINT("Couldn't get executable path from /proc/self/exe, using argv[0]");
 		return OS::get_executable_path();
