@@ -169,9 +169,7 @@ String DirAccessUnix::get_next() {
 	String f = current_dir.path_join(fname);
 	if (stat(f.utf8().get_data(), &flags) == 0) {
 		_cisdir = S_ISDIR(flags.st_mode);
-	}
-	else
-	{
+	} else {
 		_cisdir = false;
 	}
 #else

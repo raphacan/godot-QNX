@@ -1,0 +1,48 @@
+#!/usr/bin/env python
+from misc.utility.scons_hints import *
+
+Import("env")
+
+import platform_qnx_builders
+
+common_qnx = [
+    "crash_handler_qnx.cpp",
+    "os_qnx.cpp",
+]
+
+if env["library_type"] == "executable":
+    common_qnx += ["godot_qnx.cpp"]
+else:
+    common_qnx += ["libgodot_qnx.cpp"]
+
+# if env["use_sowrap"]:
+#    common_qnx.append("xkbcommon-so_wrap.c")
+
+if env["screen"]:
+    common_qnx += SConscript("screen/SCsub")
+
+if env["wayland"]:
+    common_qnx += SConscript("wayland/SCsub")
+
+if env["speechd"]:
+    common_qnx.append("tts_linux.cpp")
+    if env["use_sowrap"]:
+        common_qnx.append("speechd-so_wrap.c")
+
+if env["fontconfig"]:
+    if env["use_sowrap"]:
+        common_qnx.append("fontconfig-so_wrap.c")
+
+if env["dbus"]:
+    if env["use_sowrap"]:
+        common_qnx.append("dbus-so_wrap.c")
+
+if env["library_type"] == "static_library":
+    prog = env.add_library("#bin/godot", common_qnx)
+elif env["library_type"] == "shared_library":
+    prog = env.add_shared_library("#bin/godot", common_qnx)
+else:
+    prog = env.add_program("#bin/godot", common_qnx)
+
+if env["debug_symbols"] and env["separate_debug_symbols"]:
+    env.AddPostAction(prog, env.Run(platform_qnx_builders.make_debug_qnx))
