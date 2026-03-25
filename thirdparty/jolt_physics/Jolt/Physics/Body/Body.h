@@ -23,6 +23,7 @@ class StateRecorder;
 class BodyCreationSettings;
 class SoftBodyCreationSettings;
 
+constexpr auto JPH_BODY_ALIGNMENT = max(JPH_VECTOR_ALIGNMENT, JPH_RVECTOR_ALIGNMENT);
 /// A rigid body that can be simulated using the physics system
 ///
 /// Note that internally all properties (position, velocity etc.) are tracked relative to the center of mass of the object to simplify the simulation of the object.
@@ -33,7 +34,7 @@ class SoftBodyCreationSettings;
 /// The linear velocity is also velocity of the center of mass, to correct for this: \f$VelocityCOM = Velocity - AngularVelocity \times ShapeCOM\f$.
 class
 #ifndef JPH_PLATFORM_DOXYGEN // Doxygen gets confused here
-	JPH_EXPORT_GCC_BUG_WORKAROUND alignas(max(JPH_VECTOR_ALIGNMENT, JPH_RVECTOR_ALIGNMENT))
+	JPH_EXPORT_GCC_BUG_WORKAROUND alignas(JPH_BODY_ALIGNMENT)
 #endif
 	Body : public NonCopyable
 {

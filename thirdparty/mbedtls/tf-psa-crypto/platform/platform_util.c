@@ -6,6 +6,7 @@
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
 
+ 
 #include "tf_psa_crypto_common.h"
 
 #include "mbedtls/platform_util.h"
@@ -18,6 +19,10 @@
 
 #if defined(_WIN32)
 #include <windows.h>
+#endif
+#if defined(__QNX__)
+// Needed for _POSIX_VERSION
+#include <unistd.h>
 #endif
 
 // Detect platforms known to support explicit_bzero()

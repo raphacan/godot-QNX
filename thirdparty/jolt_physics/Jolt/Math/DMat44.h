@@ -8,8 +8,10 @@
 
 JPH_NAMESPACE_BEGIN
 
+constexpr auto JPH_DMAT44_ALIGNMENT = max(JPH_VECTOR_ALIGNMENT, JPH_DVECTOR_ALIGNMENT);
+
 /// Holds a 4x4 matrix of floats with the last column consisting of doubles
-class [[nodiscard]] alignas(max(JPH_VECTOR_ALIGNMENT, JPH_DVECTOR_ALIGNMENT)) DMat44
+class [[nodiscard]] alignas(JPH_DMAT44_ALIGNMENT) DMat44
 {
 public:
 	JPH_OVERRIDE_NEW_DELETE
