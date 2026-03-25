@@ -164,6 +164,17 @@ String DirAccessUnix::get_next() {
 	// the type is a link, in that case we want to resolve the link to
 	// known if it points to a directory. stat() will resolve the link
 	// for us.
+#if defined(QNX_ENABLED)
+	struct stat flags = {};
+	String f = current_dir.path_join(fname);
+	if (stat(f.utf8().get_data(), &flags) == 0) {
+		_cisdir = S_ISDIR(flags.st_mode);
+	}
+	else
+	{
+		_cisdir = false;
+	}
+#else
 	if (entry->d_type == DT_UNKNOWN || entry->d_type == DT_LNK) {
 		String f = current_dir.path_join(fname);
 
@@ -176,6 +187,7 @@ String DirAccessUnix::get_next() {
 	} else {
 		_cisdir = (entry->d_type == DT_DIR);
 	}
+#endif
 
 	_cishidden = is_hidden(fname);
 
