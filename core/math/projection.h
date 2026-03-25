@@ -119,7 +119,7 @@ struct [[nodiscard]] Projection {
 	void invert();
 	Projection inverse() const;
 
-	constexpr Projection operator*(const Projection &p_matrix) const;
+	_FORCE_INLINE_ Projection operator*(const Projection &p_matrix) const;
 
 	Plane xform4(const Plane &p_vec4) const;
 	_FORCE_INLINE_ Vector3 xform(const Vector3 &p_vec3) const;
@@ -139,7 +139,7 @@ struct [[nodiscard]] Projection {
 
 	bool is_same(const Projection &p_cam) const;
 
-	constexpr bool operator==(const Projection &p_cam) const {
+	_FORCE_INLINE_ bool operator==(const Projection &p_cam) const {
 		for (uint32_t i = 0; i < 4; i++) {
 			for (uint32_t j = 0; j < 4; j++) {
 				if (columns[i][j] != p_cam.columns[i][j]) {
@@ -150,7 +150,7 @@ struct [[nodiscard]] Projection {
 		return true;
 	}
 
-	constexpr bool operator!=(const Projection &p_cam) const {
+	_FORCE_INLINE_ bool operator!=(const Projection &p_cam) const {
 		return !(*this == p_cam);
 	}
 
@@ -169,7 +169,7 @@ struct [[nodiscard]] Projection {
 	Projection(const Transform3D &p_transform);
 };
 
-constexpr Projection Projection::operator*(const Projection &p_matrix) const {
+_FORCE_INLINE_ Projection Projection::operator*(const Projection &p_matrix) const {
 	Projection new_matrix;
 
 	for (int j = 0; j < 4; j++) {

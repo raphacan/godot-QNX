@@ -172,7 +172,7 @@ void EditorExportPlatformWeb::_fix_html(Vector<uint8_t> &p_html, const Ref<Edito
 	replaces["$GODOT_PROJECT_NAME"] = get_project_setting(p_preset, "application/config/name");
 	replaces["$GODOT_HEAD_INCLUDE"] = head_include + custom_head_include;
 	replaces["$GODOT_CONFIG"] = str_config;
-	replaces["$GODOT_SPLASH_COLOR"] = "#" + Color(get_project_setting(p_preset, "application/boot_splash/bg_color")).to_html(false);
+	replaces["$GODOT_SPLASH_COLOR"] = "#" + get_project_setting(p_preset, "application/boot_splash/bg_color").operator Color().to_html(false);
 
 	Vector<String> godot_splash_classes;
 	godot_splash_classes.push_back("show-image--" + String(get_project_setting(p_preset, "application/boot_splash/show_image")));
