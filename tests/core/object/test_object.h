@@ -151,7 +151,7 @@ TEST_CASE("[Object] Metadata") {
 
 	object.set_meta(meta_path, Color(0, 1, 0));
 	CHECK_MESSAGE(
-			Color(object.get_meta(meta_path)).is_equal_approx(Color(0, 1, 0)),
+			object.get_meta(meta_path).operator Color().is_equal_approx(Color(0, 1, 0)),
 			"The returned object metadata after setting should match the expected value.");
 
 	List<StringName> meta_list;
@@ -183,7 +183,7 @@ TEST_CASE("[Object] Metadata") {
 	object.merge_meta_from(&other);
 
 	CHECK_MESSAGE(
-			Color(object.get_meta("conflicting_meta")).is_equal_approx(Color(0, 1, 0)),
+			object.get_meta("conflicting_meta").operator Color().is_equal_approx(Color(0, 1, 0)),
 			"String meta should be overwritten with Color after merging.");
 
 	CHECK_MESSAGE(

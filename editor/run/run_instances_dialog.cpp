@@ -328,7 +328,7 @@ RunInstancesDialog::RunInstancesDialog() {
 		main_gc->add_child(l);
 	}
 
-	stored_data = TypedArray<Dictionary>(EditorSettings::get_singleton()->get_project_metadata("debug_options", "run_instances_config", TypedArray<Dictionary>()));
+	stored_data = EditorSettings::get_singleton()->get_project_metadata("debug_options", "run_instances_config", TypedArray<Dictionary>()).operator TypedArray<Dictionary>();
 
 	main_args_edit = memnew(LineEdit);
 	main_args_edit->set_h_size_flags(Control::SIZE_EXPAND_FILL);
