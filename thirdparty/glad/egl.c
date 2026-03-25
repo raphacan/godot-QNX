@@ -33,7 +33,7 @@ int GLAD_EGL_ANDROID_blob_cache = 0;
 int GLAD_EGL_EXT_platform_base = 0;
 int GLAD_EGL_KHR_platform_wayland = 0;
 int GLAD_EGL_KHR_platform_x11 = 0;
-
+int GLAD_EGL_QNX_platform_screen = 0;
 
 
 PFNEGLBINDAPIPROC glad_eglBindAPI = NULL;
@@ -196,6 +196,7 @@ static int glad_egl_find_extensions_egl(EGLDisplay display) {
     GLAD_EGL_EXT_platform_base = glad_egl_has_extension(extensions, "EGL_EXT_platform_base");
     GLAD_EGL_KHR_platform_wayland = glad_egl_has_extension(extensions, "EGL_KHR_platform_wayland");
     GLAD_EGL_KHR_platform_x11 = glad_egl_has_extension(extensions, "EGL_KHR_platform_x11");
+    GLAD_EGL_QNX_platform_screen = glad_egl_has_extension(extensions, "EGL_QNX_platform_screen");
 
     return 1;
 }
@@ -207,9 +208,11 @@ static int glad_egl_find_core_egl(EGLDisplay display) {
     if (display == NULL) {
         display = EGL_NO_DISPLAY; /* this is usually NULL, better safe than sorry */
     }
+#ifndef __QNX__
     if (display == EGL_NO_DISPLAY) {
         display = eglGetCurrentDisplay();
     }
+#endif
 #ifdef EGL_VERSION_1_4
     if (display == EGL_NO_DISPLAY) {
         display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
