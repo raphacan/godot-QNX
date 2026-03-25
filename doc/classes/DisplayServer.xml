@@ -2204,7 +2204,7 @@
 			<param index="1" name="window_id" type="int" default="0" />
 			<description>
 				Returns internal structure pointers for use in plugins.
-				[b]Note:[/b] This method is implemented on Android, Linux (X11/Wayland), macOS, and Windows.
+				[b]Note:[/b] This method is implemented on Android, Linux (X11/Wayland), macOS, QNX and Windows.
 			</description>
 		</method>
 		<method name="window_get_output_max_linear_value" qualifiers="const">
@@ -2358,7 +2358,7 @@
 			<description>
 				Moves the window specified by [param window_id] to the specified [param screen]. See also [method window_get_current_screen].
 				[b]Note:[/b] One of the following constants can be used as [param screen]: [constant SCREEN_OF_MAIN_WINDOW], [constant SCREEN_PRIMARY], [constant SCREEN_WITH_MOUSE_FOCUS], or [constant SCREEN_WITH_KEYBOARD_FOCUS].
-				[b]Note:[/b] This method is implemented on Linux/X11, macOS, and Windows.
+				[b]Note:[/b] This method is implemented on Linux/X11, macOS, QNX and Windows.
 			</description>
 		</method>
 		<method name="window_set_drop_files_callback">
@@ -2651,13 +2651,13 @@
 			Display server supports global menu. This allows the application to display its menu items in the operating system's top bar. [b]macOS[/b]
 		</constant>
 		<constant name="FEATURE_SUBWINDOWS" value="1" enum="Feature">
-			Display server supports multiple windows that can be moved outside of the main window. [b]Windows, macOS, Linux (X11)[/b]
+			Display server supports multiple windows that can be moved outside of the main window. [b]Windows, macOS, Linux (X11), QNX[/b]
 		</constant>
 		<constant name="FEATURE_TOUCHSCREEN" value="2" enum="Feature">
-			Display server supports touchscreen input. [b]Windows, Linux (X11), Android, iOS, Web[/b]
+			Display server supports touchscreen input. [b]Windows, Linux (X11), Android, iOS, QNX, Web[/b]
 		</constant>
 		<constant name="FEATURE_MOUSE" value="3" enum="Feature">
-			Display server supports mouse input. [b]Windows, macOS, Linux (X11/Wayland), Android, Web[/b]
+			Display server supports mouse input. [b]Windows, macOS, Linux (X11/Wayland), Android, QNX, Web[/b]
 		</constant>
 		<constant name="FEATURE_MOUSE_WARP" value="4" enum="Feature">
 			Display server supports warping mouse coordinates to keep the mouse cursor constrained within an area, but looping when one of the edges is reached. [b]Windows, macOS, Linux (X11/Wayland)[/b]
@@ -2669,7 +2669,7 @@
 			Display server supports popping up a virtual keyboard when requested to input text without a physical keyboard. [b]Android, iOS, Web[/b]
 		</constant>
 		<constant name="FEATURE_CURSOR_SHAPE" value="7" enum="Feature">
-			Display server supports setting the mouse cursor shape to be different from the default. [b]Windows, macOS, Linux (X11/Wayland), Android, Web[/b]
+			Display server supports setting the mouse cursor shape to be different from the default. [b]Windows, macOS, Linux (X11/Wayland), Android, QNX, Web[/b]
 		</constant>
 		<constant name="FEATURE_CUSTOM_CURSOR_SHAPE" value="8" enum="Feature">
 			Display server supports setting the mouse cursor shape to a custom image. [b]Windows, macOS, Linux (X11/Wayland), Web[/b]
@@ -2681,7 +2681,7 @@
 			Display server supports [url=https://en.wikipedia.org/wiki/Input_method]Input Method Editor[/url], which is commonly used for inputting Chinese/Japanese/Korean text. This is handled by the operating system, rather than by Godot. [b]Windows, macOS, Linux (X11)[/b]
 		</constant>
 		<constant name="FEATURE_WINDOW_TRANSPARENCY" value="11" enum="Feature">
-			Display server supports windows can use per-pixel transparency to make windows behind them partially or fully visible. [b]Windows, macOS, Linux (X11/Wayland), Android[/b]
+			Display server supports windows can use per-pixel transparency to make windows behind them partially or fully visible. [b]Windows, macOS, Linux (X11/Wayland), Android, QNX[/b]
 		</constant>
 		<constant name="FEATURE_HIDPI" value="12" enum="Feature">
 			Display server supports querying the operating system's display scale factor. This allows automatically detecting the hiDPI display [i]reliably[/i], instead of guessing based on the screen resolution and the display's reported DPI (which might be unreliable due to broken monitor EDID). [b]Windows, Linux (Wayland), macOS[/b]
@@ -2694,10 +2694,10 @@
 			Display server supports changing the window icon (usually displayed in the top-left corner). [b]Windows, macOS[/b]
 		</constant>
 		<constant name="FEATURE_ORIENTATION" value="15" enum="Feature">
-			Display server supports changing the screen orientation. [b]Android, iOS[/b]
+			Display server supports changing the screen orientation. [b]Android, iOS, QNX[/b]
 		</constant>
 		<constant name="FEATURE_SWAP_BUFFERS" value="16" enum="Feature">
-			Display server supports V-Sync status can be changed from the default (which is forced to be enabled platforms not supporting this feature). [b]Windows, macOS, Linux (X11/Wayland)[/b]
+			Display server supports V-Sync status can be changed from the default (which is forced to be enabled platforms not supporting this feature). [b]Windows, macOS, Linux (X11/Wayland), QNX[/b]
 		</constant>
 		<constant name="FEATURE_CLIPBOARD_PRIMARY" value="18" enum="Feature">
 			Display server supports Primary clipboard can be used. This is a different clipboard from [constant FEATURE_CLIPBOARD]. [b]Linux (X11/Wayland)[/b]
@@ -3070,7 +3070,7 @@
 		</constant>
 		<constant name="SCREEN_WITH_MOUSE_FOCUS" value="-4">
 			Represents the screen containing the mouse pointer.
-			[b]Note:[/b] On Android, iOS, Web, and Linux (Wayland), this constant always represents the screen at index [code]0[/code].
+			[b]Note:[/b] On Android, iOS, Web, Linux (Wayland), and QNX, this constant always represents the screen at index [code]0[/code].
 		</constant>
 		<constant name="SCREEN_WITH_KEYBOARD_FOCUS" value="-3">
 			Represents the screen containing the window with the keyboard focus.
@@ -3078,11 +3078,11 @@
 		</constant>
 		<constant name="SCREEN_PRIMARY" value="-2">
 			Represents the primary screen.
-			[b]Note:[/b] On Android, iOS, Web, and Linux (Wayland), this constant always represents the screen at index [code]0[/code].
+			[b]Note:[/b] On Android, iOS, Web, Linux (Wayland), and QNX, this constant always represents the screen at index [code]0[/code].
 		</constant>
 		<constant name="SCREEN_OF_MAIN_WINDOW" value="-1">
 			Represents the screen where the main window is located. This is usually the default value in functions that allow specifying one of several screens.
-			[b]Note:[/b] On Android, iOS, Web, and Linux (Wayland), this constant always represents the screen at index [code]0[/code].
+			[b]Note:[/b] On Android, iOS, Web, Linux (Wayland), and QNX, this constant always represents the screen at index [code]0[/code].
 		</constant>
 		<constant name="MAIN_WINDOW_ID" value="0">
 			The ID of the main window spawned by the engine, which can be passed to methods expecting a [code]window_id[/code].
@@ -3404,12 +3404,14 @@
 			- Linux (X11): [code]GLXContext*[/code] for the window.
 			- Linux (Wayland): [code]EGLContext[/code] for the window.
 			- macOS: [code]NSOpenGLContext*[/code] for the window (native GL), or [code]EGLContext[/code] for the window (ANGLE).
+			- QNX: [code]EGLContext[/code] for the window.
 			- Android: [code]EGLContext[/code] for the window.
 		</constant>
 		<constant name="EGL_DISPLAY" value="4" enum="HandleType">
 			- Windows: [code]EGLDisplay[/code] for the window (ANGLE).
 			- macOS: [code]EGLDisplay[/code] for the window (ANGLE).
 			- Linux (Wayland): [code]EGLDisplay[/code] for the window.
+			- QNX: [code]EGLDisplay[/code] for the window.
 		</constant>
 		<constant name="EGL_CONFIG" value="5" enum="HandleType">
 			- Windows: [code]EGLConfig[/code] for the window (ANGLE).
