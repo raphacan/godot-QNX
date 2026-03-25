@@ -37,7 +37,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#if !defined(__FreeBSD__) && !defined(__OpenBSD__) && !defined(__NetBSD__) && !defined(WEB_ENABLED) && !defined(__QNX__)
+#if !defined(__FreeBSD__) && !defined(__OpenBSD__) && !defined(__NetBSD__) && !defined(WEB_ENABLED) && !defined(__QNX__) && !defined(__QNX__)
 #include <sys/xattr.h>
 #endif
 #include <unistd.h>
@@ -509,7 +509,7 @@ PackedByteArray FileAccessUnix::_get_extended_attribute(const String &p_file, co
 	ERR_FAIL_COND_V(p_attribute_name.is_empty(), PackedByteArray());
 
 	PackedByteArray data;
-#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(WEB_ENABLED) || defined(__QNX__)
+#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(WEB_ENABLED) || defined(__QNX__) || defined(__QNX__)
 	// Not supported.
 #elif defined(__APPLE__)
 	String file = fix_path(p_file);
@@ -540,7 +540,7 @@ PackedByteArray FileAccessUnix::_get_extended_attribute(const String &p_file, co
 Error FileAccessUnix::_set_extended_attribute(const String &p_file, const String &p_attribute_name, const PackedByteArray &p_data) {
 	ERR_FAIL_COND_V(p_attribute_name.is_empty(), FAILED);
 
-#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(WEB_ENABLED) || defined(__QNX__)
+#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(WEB_ENABLED) || defined(__QNX__) || defined(__QNX__)
 	// Not supported.
 #elif defined(__APPLE__)
 	String file = fix_path(p_file);
@@ -561,7 +561,7 @@ Error FileAccessUnix::_set_extended_attribute(const String &p_file, const String
 Error FileAccessUnix::_remove_extended_attribute(const String &p_file, const String &p_attribute_name) {
 	ERR_FAIL_COND_V(p_attribute_name.is_empty(), FAILED);
 
-#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(WEB_ENABLED) || defined(__QNX__)
+#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(WEB_ENABLED) || defined(__QNX__) || defined(__QNX__)
 	// Not supported.
 #elif defined(__APPLE__)
 	String file = fix_path(p_file);

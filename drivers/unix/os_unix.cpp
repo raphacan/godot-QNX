@@ -54,7 +54,7 @@
 #include <sys/sysctl.h>
 #endif
 
-#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(__QNX__)
+#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(__QNX__) || defined(__QNX__)
 #include <sys/param.h>
 #include <sys/sysctl.h>
 #endif
