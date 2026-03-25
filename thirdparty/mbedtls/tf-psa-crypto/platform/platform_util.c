@@ -6,7 +6,11 @@
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
 
- 
+#if defined(__QNX__)
+// Needed for _POSIX_VERSION
+#include <unistd.h>
+#endif
+
 #include "tf_psa_crypto_common.h"
 
 #include "mbedtls/platform_util.h"
