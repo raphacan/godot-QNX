@@ -107,7 +107,7 @@
 #endif
 
 /* try to detect other Unix systems */
-#if defined(__unix__) || defined (unix) || defined(__unix) || defined(_unix)
+#if defined(__unix__) || defined (unix) || defined(__unix) || defined(_unix) || defined(__QNX__)
 #  if !defined(__UNIX__)
 #     define __UNIX__
 #  endif

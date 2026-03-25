@@ -19,10 +19,10 @@
  *  - ON_DEMAND = False
  *
  * Commandline:
- *    --api='egl=1.5' --extensions='EGL_ANDROID_blob_cache,EGL_EXT_platform_base,EGL_KHR_platform_wayland,EGL_KHR_platform_x11' c --loader
+ *    --api='egl=1.5' --extensions='EGL_ANDROID_blob_cache,EGL_EXT_platform_base,EGL_KHR_platform_wayland,EGL_KHR_platform_x11,EGL_QNX_platform_screen' c --loader
  *
  * Online:
- *    http://glad.sh/#api=egl%3D1.5&extensions=EGL_ANDROID_blob_cache%2CEGL_EXT_platform_base%2CEGL_KHR_platform_wayland%2CEGL_KHR_platform_x11&generator=c&options=LOADER
+ *    http://glad.sh/#api=egl%3D1.5&extensions=EGL_ANDROID_blob_cache%2CEGL_EXT_platform_base%2CEGL_KHR_platform_wayland%2CEGL_KHR_platform_x11%2CEGL_QNX_platform_screen&generator=c&options=LOADER
  *
  */
 
@@ -271,6 +271,7 @@ typedef void (*GLADpostcallback)(void *ret, const char *name, GLADapiproc apipro
 #define EGL_PLATFORM_WAYLAND_KHR 0x31D8
 #define EGL_PLATFORM_X11_KHR 0x31D5
 #define EGL_PLATFORM_X11_SCREEN_KHR 0x31D6
+#define EGL_PLATFORM_SCREEN_QNX 0x3550
 #define EGL_READ 0x305A
 #define EGL_RED_SIZE 0x3024
 #define EGL_RENDERABLE_TYPE 0x3040
@@ -405,7 +406,8 @@ GLAD_API_CALL int GLAD_EGL_EXT_platform_base;
 GLAD_API_CALL int GLAD_EGL_KHR_platform_wayland;
 #define EGL_KHR_platform_x11 1
 GLAD_API_CALL int GLAD_EGL_KHR_platform_x11;
-
+#define EGL_QNX_platform_screen 1
+GLAD_API_CALL int GLAD_EGL_QNX_platform_screen;
 
 typedef EGLBoolean (GLAD_API_PTR *PFNEGLBINDAPIPROC)(EGLenum api);
 typedef EGLBoolean (GLAD_API_PTR *PFNEGLBINDTEXIMAGEPROC)(EGLDisplay dpy, EGLSurface surface, EGLint buffer);
