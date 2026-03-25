@@ -80,7 +80,11 @@ void IPUnix::_resolve_hostname(List<IPAddress> &r_addresses, const String &p_hos
 		hints.ai_flags = 0;
 	} else {
 		hints.ai_family = AF_UNSPEC;
+#if defined(__QNX__)
+		hints.ai_flags = EAI_ADDRFAMILY;
+#else
 		hints.ai_flags = AI_ADDRCONFIG;
+#endif
 	}
 	hints.ai_flags &= ~AI_NUMERICHOST;
 
