@@ -29,22 +29,39 @@
 /**************************************************************************/
 
 #include "display_server_qnx.h"
-#include "os_qnx.h"
 
 #ifdef QNX_ENABLED
 
+#include "core/config/project_settings.h"
+#include "core/input/input.h"
+#include "core/io/file_access.h"
+#include "core/math/math_funcs.h"
+#include "core/object/callable_mp.h"
+#include "core/object/class_db.h"
+#include "core/os/main_loop.h"
+#include "core/os/os.h"
+#include "core/string/print_string.h"
+#include "drivers/unix/os_unix.h"
+#include "main/main.h"
+#include "servers/display/accessibility_server.h"
+#include "servers/display/native_menu.h"
 #include "servers/rendering/dummy/rasterizer_dummy.h"
 
+#ifdef RD_ENABLED
 #ifdef VULKAN_ENABLED
+#include "screen/rendering_context_driver_vulkan_screen.h"
+#endif
+
 #include "servers/rendering/renderer_rd/renderer_compositor_rd.h"
 #endif
 
 #ifdef GLES3_ENABLED
-#include "drivers/gles3/rasterizer_gles3.h"
+#include "screen/egl_manager_qnx_screen.h"
 
-static EGLNativeDisplayType DEFAULT_DISPLAY_ID = EGL_DEFAULT_DISPLAY;
+#include "drivers/gles3/rasterizer_gles3.h"
 #endif
 
+static EGLNativeDisplayType DEFAULT_DISPLAY_ID = EGL_DEFAULT_DISPLAY;
 static const int DEFAULT_SCREEN_DPI = 96;
 
 #define DISPLAY_SERVER_QNX_DEBUG_LOGS_ENABLED
@@ -64,33 +81,33 @@ Rect2i DisplayServerQnx::_screen_get_rect(int p_screen) const {
 	return screen_thread.get_screen_geometry(p_screen);
 }
 
-int DisplayServerQnx::_godot_cursor_to_qnx_cursor(CursorShape p_shape) {
+int DisplayServerQnx::_godot_cursor_to_qnx_cursor(DisplayServerEnums::CursorShape p_shape) {
 	switch (p_shape) {
-		case CURSOR_IBEAM:
+		case DisplayServerEnums::CURSOR_IBEAM:
 			return SCREEN_CURSOR_SHAPE_IBEAM;
-		case CURSOR_POINTING_HAND:
+		case DisplayServerEnums::CURSOR_POINTING_HAND:
 			return SCREEN_CURSOR_SHAPE_HAND;
-		case CURSOR_CROSS:
+		case DisplayServerEnums::CURSOR_CROSS:
 			return SCREEN_CURSOR_SHAPE_CROSS;
-		case CURSOR_WAIT:
+		case DisplayServerEnums::CURSOR_WAIT:
 			return SCREEN_CURSOR_SHAPE_WAIT;
-		case CURSOR_DRAG:
+		case DisplayServerEnums::CURSOR_DRAG:
 			return SCREEN_CURSOR_SHAPE_GRAB;
-		case CURSOR_CAN_DROP:
+		case DisplayServerEnums::CURSOR_CAN_DROP:
 			return SCREEN_CURSOR_SHAPE_GRABBING;
-		case CURSOR_MOVE:
+		case DisplayServerEnums::CURSOR_MOVE:
 			return SCREEN_CURSOR_SHAPE_MOVE;
-		case CURSOR_ARROW:
-		case CURSOR_FORBIDDEN:
-		case CURSOR_VSIZE:
-		case CURSOR_HSIZE:
-		case CURSOR_BDIAGSIZE:
-		case CURSOR_FDIAGSIZE:
-		case CURSOR_BUSY:
-		case CURSOR_VSPLIT:
-		case CURSOR_HSPLIT:
-		case CURSOR_HELP:
-		case CURSOR_MAX:
+		case DisplayServerEnums::CURSOR_ARROW:
+		case DisplayServerEnums::CURSOR_FORBIDDEN:
+		case DisplayServerEnums::CURSOR_VSIZE:
+		case DisplayServerEnums::CURSOR_HSIZE:
+		case DisplayServerEnums::CURSOR_BDIAGSIZE:
+		case DisplayServerEnums::CURSOR_FDIAGSIZE:
+		case DisplayServerEnums::CURSOR_BUSY:
+		case DisplayServerEnums::CURSOR_VSPLIT:
+		case DisplayServerEnums::CURSOR_HSPLIT:
+		case DisplayServerEnums::CURSOR_HELP:
+		case DisplayServerEnums::CURSOR_MAX:
 		default:
 			return SCREEN_CURSOR_SHAPE_ARROW;
 	}
@@ -98,30 +115,34 @@ int DisplayServerQnx::_godot_cursor_to_qnx_cursor(CursorShape p_shape) {
 
 // Interface methods.
 
-bool DisplayServerQnx::has_feature(Feature p_feature) const {
+bool DisplayServerQnx::has_feature(DisplayServerEnums::Feature p_feature) const {
 	switch (p_feature) {
 #ifndef DISABLE_DEPRECATED
-		case FEATURE_GLOBAL_MENU: {
+		case DisplayServerEnums::FEATURE_GLOBAL_MENU: {
 			return (native_menu && native_menu->has_feature(NativeMenu::FEATURE_GLOBAL_MENU));
 		} break;
 #endif
-		case FEATURE_MOUSE:
-		//case FEATURE_MOUSE_WARP:
-		//case FEATURE_CLIPBOARD:
-		case FEATURE_CURSOR_SHAPE:
-		//case FEATURE_CUSTOM_CURSOR_SHAPE:
-		case FEATURE_WINDOW_TRANSPARENCY:
-		//case FEATURE_HIDPI:
-		case FEATURE_ORIENTATION:
-		case FEATURE_TOUCHSCREEN:
-		case FEATURE_SWAP_BUFFERS:
-		case FEATURE_KEEP_SCREEN_ON:
-		case FEATURE_SUBWINDOWS:
-			//case FEATURE_IME:
-			//case FEATURE_CLIPBOARD_PRIMARY:
+		case DisplayServerEnums::FEATURE_MOUSE:
+		//case DisplayServerEnums::FEATURE_MOUSE_WARP:
+		//case DisplayServerEnums::FEATURE_CLIPBOARD:
+		case DisplayServerEnums::FEATURE_CURSOR_SHAPE:
+		//case DisplayServerEnums::FEATURE_CUSTOM_CURSOR_SHAPE:
+		case DisplayServerEnums::FEATURE_WINDOW_TRANSPARENCY:
+		//case DisplayServerEnums::FEATURE_HIDPI:
+		case DisplayServerEnums::FEATURE_ORIENTATION:
+		case DisplayServerEnums::FEATURE_TOUCHSCREEN:
+		case DisplayServerEnums::FEATURE_SWAP_BUFFERS:
+		case DisplayServerEnums::FEATURE_KEEP_SCREEN_ON:
+		case DisplayServerEnums::FEATURE_SUBWINDOWS: {
+			//case DisplayServerEnums::FEATURE_IME:
+			//case DisplayServerEnums::FEATURE_CLIPBOARD_PRIMARY:
 			return true;
-		//case FEATURE_NATIVE_DIALOG:
-		//case FEATURE_NATIVE_DIALOG_INPUT:
+		} break;
+		//case DisplayServerEnums::FEATURE_NATIVE_DIALOG:
+		//case DisplayServerEnums::FEATURE_NATIVE_DIALOG_INPUT:
+		case DisplayServerEnums::FEATURE_ACCESSIBILITY_SCREEN_READER: {
+			return AccessibilityServer::get_singleton()->is_supported();
+		} break;
 		default:
 			return false;
 	}
@@ -192,7 +213,7 @@ bool DisplayServerQnx::is_touchscreen_available() const {
 	return true;
 }
 
-void DisplayServerQnx::screen_set_orientation(ScreenOrientation p_orientation, int p_screen) {
+void DisplayServerQnx::screen_set_orientation(DisplayServerEnums::ScreenOrientation p_orientation, int p_screen) {
 	_THREAD_SAFE_METHOD_
 
 	p_screen = _get_screen_index(p_screen);
@@ -203,19 +224,19 @@ void DisplayServerQnx::screen_set_orientation(ScreenOrientation p_orientation, i
 
 	int orientation = SCREEN_ROTATION_NONE;
 	switch (p_orientation) {
-		case SCREEN_SENSOR_PORTRAIT:
-		case SCREEN_PORTRAIT:
+		case DisplayServerEnums::SCREEN_SENSOR_PORTRAIT:
+		case DisplayServerEnums::SCREEN_PORTRAIT:
 			orientation = SCREEN_ROTATION_90;
 			break;
-		case SCREEN_REVERSE_LANDSCAPE:
+		case DisplayServerEnums::SCREEN_REVERSE_LANDSCAPE:
 			orientation = SCREEN_ROTATION_180;
 			break;
-		case SCREEN_REVERSE_PORTRAIT:
+		case DisplayServerEnums::SCREEN_REVERSE_PORTRAIT:
 			orientation = SCREEN_ROTATION_270;
 			break;
-		case SCREEN_LANDSCAPE:
-		case SCREEN_SENSOR_LANDSCAPE:
-		case SCREEN_SENSOR:
+		case DisplayServerEnums::SCREEN_LANDSCAPE:
+		case DisplayServerEnums::SCREEN_SENSOR_LANDSCAPE:
+		case DisplayServerEnums::SCREEN_SENSOR:
 		default:
 			orientation = SCREEN_ROTATION_NONE;
 			break;
@@ -227,29 +248,29 @@ void DisplayServerQnx::screen_set_orientation(ScreenOrientation p_orientation, i
 	DEBUG_LOG_QNX(vformat("Screen %d orientation set to %d.", p_screen, orientation));
 }
 
-DisplayServer::ScreenOrientation DisplayServerQnx::screen_get_orientation(int p_screen) const {
+DisplayServerEnums::ScreenOrientation DisplayServerQnx::screen_get_orientation(int p_screen) const {
 	_THREAD_SAFE_METHOD_
 
 	p_screen = _get_screen_index(p_screen);
 	int screen_count = get_screen_count();
-	ERR_FAIL_INDEX_V(p_screen, screen_count, SCREEN_LANDSCAPE);
+	ERR_FAIL_INDEX_V(p_screen, screen_count, DisplayServerEnums::SCREEN_LANDSCAPE);
 
 	screen_display_t display = screen_thread.get_screen_handle(p_screen);
 
 	int orientation = SCREEN_ROTATION_NONE;
 	int res = screen_get_display_property_iv(display, SCREEN_PROPERTY_ROTATION, &orientation);
-	ERR_FAIL_COND_V_MSG(res != 0, SCREEN_LANDSCAPE, "Failed to get orientation for screen " + itos(p_screen) + ".");
+	ERR_FAIL_COND_V_MSG(res != 0, DisplayServerEnums::SCREEN_LANDSCAPE, "Failed to get orientation for screen " + itos(p_screen) + ".");
 
 	switch (orientation) {
 		case SCREEN_ROTATION_90:
-			return SCREEN_PORTRAIT;
+			return DisplayServerEnums::SCREEN_PORTRAIT;
 		case SCREEN_ROTATION_180:
-			return SCREEN_REVERSE_LANDSCAPE;
+			return DisplayServerEnums::SCREEN_REVERSE_LANDSCAPE;
 		case SCREEN_ROTATION_270:
-			return SCREEN_REVERSE_PORTRAIT;
+			return DisplayServerEnums::SCREEN_REVERSE_PORTRAIT;
 		case SCREEN_ROTATION_NONE:
 		default:
-			return SCREEN_LANDSCAPE;
+			return DisplayServerEnums::SCREEN_LANDSCAPE;
 	}
 }
 
@@ -260,21 +281,21 @@ bool DisplayServerQnx::screen_is_kept_on() const {
 	return true;
 }
 
-Vector<DisplayServer::WindowID> DisplayServerQnx::get_window_list() const {
+Vector<DisplayServerEnums::WindowID> DisplayServerQnx::get_window_list() const {
 	_THREAD_SAFE_METHOD_
 
 	Vector<int> ret;
-	for (const KeyValue<WindowID, WindowData> &E : windows) {
+	for (const KeyValue<DisplayServerEnums::WindowID, WindowData> &E : windows) {
 		ret.push_back(E.key);
 	}
 	return ret;
 }
 
-DisplayServer::WindowID DisplayServerQnx::create_sub_window(WindowMode p_mode, VSyncMode p_vsync_mode, uint32_t p_flags, const Rect2i &p_rect, bool p_exclusive, WindowID p_transient_parent) {
+DisplayServerEnums::WindowID DisplayServerQnx::create_sub_window(DisplayServerEnums::WindowMode p_mode, DisplayServerEnums::VSyncMode p_vsync_mode, uint32_t p_flags, const Rect2i &p_rect, bool p_exclusive, DisplayServerEnums::WindowID p_transient_parent) {
 	_THREAD_SAFE_METHOD_
 
 	screen_window_t parent_window = nullptr;
-	if (p_transient_parent != INVALID_WINDOW_ID) {
+	if (p_transient_parent != DisplayServerEnums::INVALID_WINDOW_ID) {
 		if (windows.has(p_transient_parent)) {
 			parent_window = windows[p_transient_parent].screen_window;
 		} else {
@@ -282,7 +303,7 @@ DisplayServer::WindowID DisplayServerQnx::create_sub_window(WindowMode p_mode, V
 		}
 	}
 
-	WindowID id = _create_window(p_mode, p_vsync_mode, p_flags, p_rect, parent_window);
+	DisplayServerEnums::WindowID id = _create_window(p_mode, p_vsync_mode, p_flags, p_rect, parent_window);
 #ifdef RD_ENABLED
 	if (rendering_device) {
 		rendering_device->screen_create(id);
@@ -292,7 +313,7 @@ DisplayServer::WindowID DisplayServerQnx::create_sub_window(WindowMode p_mode, V
 	return id;
 }
 
-void DisplayServerQnx::show_window(WindowID p_id) {
+void DisplayServerQnx::show_window(DisplayServerEnums::WindowID p_id) {
 	_THREAD_SAFE_METHOD_
 
 	ERR_FAIL_COND_MSG(!windows.has(p_id), "DisplayServerQnx::show_window: window ID is invalid.");
@@ -305,17 +326,17 @@ void DisplayServerQnx::show_window(WindowID p_id) {
 	DEBUG_LOG_QNX(vformat("show_window: %d", p_id));
 }
 
-void DisplayServerQnx::delete_sub_window(WindowID p_id) {
+void DisplayServerQnx::delete_sub_window(DisplayServerEnums::WindowID p_id) {
 	_THREAD_SAFE_METHOD_
 
 	ERR_FAIL_COND_MSG(!windows.has(p_id), "DisplayServerQnx::delete_sub_window: window ID is invalid.");
-	ERR_FAIL_COND_MSG(p_id == MAIN_WINDOW_ID, "Main window can't be deleted");
+	ERR_FAIL_COND_MSG(p_id == DisplayServerEnums::MAIN_WINDOW_ID, "Main window can't be deleted");
 
 	DEBUG_LOG_QNX(vformat("Deleting window ID %d.", p_id));
 
-	List<WindowID>::Element *E = popup_list.find(p_id);
+	List<DisplayServerEnums::WindowID>::Element *E = popup_list.find(p_id);
 	while (E) {
-		List<WindowID>::Element *next = E->next();
+		List<DisplayServerEnums::WindowID>::Element *next = E->next();
 		popup_list.erase(E);
 		E = next;
 	}
@@ -337,6 +358,8 @@ void DisplayServerQnx::delete_sub_window(WindowID p_id) {
 	}
 #endif
 
+	AccessibilityServer::get_singleton()->window_destroy(p_id);
+
 	if (0 != screen_destroy_window(wd.screen_window)) {
 		ERR_PRINT("Failed to destroy screen window for window ID " + itos(p_id) + ".");
 	}
@@ -348,17 +371,17 @@ void DisplayServerQnx::delete_sub_window(WindowID p_id) {
 	windows.erase(p_id);
 }
 
-DisplayServer::WindowID DisplayServerQnx::window_get_active_popup() const {
+DisplayServerEnums::WindowID DisplayServerQnx::window_get_active_popup() const {
 	_THREAD_SAFE_METHOD_
 
 	if (!popup_list.is_empty()) {
 		return popup_list.back()->get();
 	}
 
-	return INVALID_WINDOW_ID;
+	return DisplayServerEnums::INVALID_WINDOW_ID;
 }
 
-void DisplayServerQnx::window_set_popup_safe_rect(WindowID p_window, const Rect2i &p_rect) {
+void DisplayServerQnx::window_set_popup_safe_rect(DisplayServerEnums::WindowID p_window, const Rect2i &p_rect) {
 	_THREAD_SAFE_METHOD_
 
 	ERR_FAIL_COND(!windows.has(p_window));
@@ -366,7 +389,7 @@ void DisplayServerQnx::window_set_popup_safe_rect(WindowID p_window, const Rect2
 	windows[p_window].safe_rect = p_rect;
 }
 
-Rect2i DisplayServerQnx::window_get_popup_safe_rect(WindowID p_window) const {
+Rect2i DisplayServerQnx::window_get_popup_safe_rect(DisplayServerEnums::WindowID p_window) const {
 	_THREAD_SAFE_METHOD_
 
 	ERR_FAIL_COND_V(!windows.has(p_window), Rect2i());
@@ -374,35 +397,35 @@ Rect2i DisplayServerQnx::window_get_popup_safe_rect(WindowID p_window) const {
 	return windows[p_window].safe_rect;
 }
 
-int64_t DisplayServerQnx::window_get_native_handle(HandleType p_handle_type, WindowID p_window) const {
+int64_t DisplayServerQnx::window_get_native_handle(DisplayServerEnums::HandleType p_handle_type, DisplayServerEnums::WindowID p_window) const {
 	ERR_FAIL_COND_V(!windows.has(p_window), 0);
 	switch (p_handle_type) {
-		case DISPLAY_HANDLE: {
+		case DisplayServerEnums::DISPLAY_HANDLE: {
 			return _get_native_display_handle(p_window);
 		} break;
 
-		case WINDOW_HANDLE: {
+		case DisplayServerEnums::WINDOW_HANDLE: {
 			return (int64_t)windows[p_window].screen_window;
 		} break;
 
-		case WINDOW_VIEW: {
+		case DisplayServerEnums::WINDOW_VIEW: {
 			return 0; // Not supported.
 		} break;
 
 #ifdef GLES3_ENABLED
-		case OPENGL_CONTEXT: {
+		case DisplayServerEnums::OPENGL_CONTEXT: {
 			if (egl_manager) {
 				return (int64_t)egl_manager->get_context(p_window);
 			}
 			return 0;
 		} break;
-		case EGL_DISPLAY: {
+		case DisplayServerEnums::EGL_DISPLAY: {
 			if (egl_manager) {
 				return (int64_t)egl_manager->get_display(p_window);
 			}
 			return 0;
 		}
-		case EGL_CONFIG: {
+		case DisplayServerEnums::EGL_CONFIG: {
 			if (egl_manager) {
 				return (int64_t)egl_manager->get_config(p_window);
 			}
@@ -416,7 +439,7 @@ int64_t DisplayServerQnx::window_get_native_handle(HandleType p_handle_type, Win
 	}
 }
 
-int64_t DisplayServerQnx::_get_native_display_handle(WindowID p_window) const {
+int64_t DisplayServerQnx::_get_native_display_handle(DisplayServerEnums::WindowID p_window) const {
 	_THREAD_SAFE_METHOD_
 
 	ERR_FAIL_COND_V(!windows.has(p_window), 0);
@@ -430,7 +453,7 @@ int64_t DisplayServerQnx::_get_native_display_handle(WindowID p_window) const {
 	return (int64_t)display;
 }
 
-int DisplayServerQnx::window_get_current_screen(DisplayServer::WindowID p_window_id) const {
+int DisplayServerQnx::window_get_current_screen(DisplayServerEnums::WindowID p_window_id) const {
 	_THREAD_SAFE_METHOD_
 
 	int screen_count = get_screen_count();
@@ -439,12 +462,12 @@ int DisplayServerQnx::window_get_current_screen(DisplayServer::WindowID p_window
 		return 0;
 	}
 
-	ERR_FAIL_COND_V(!windows.has(p_window_id), INVALID_SCREEN);
+	ERR_FAIL_COND_V(!windows.has(p_window_id), DisplayServerEnums::INVALID_SCREEN);
 	const WindowData &wd = windows[p_window_id];
 	return wd.current_screen;
 }
 
-void DisplayServerQnx::window_set_current_screen(int p_screen, DisplayServer::WindowID p_window_id) {
+void DisplayServerQnx::window_set_current_screen(int p_screen, DisplayServerEnums::WindowID p_window_id) {
 	_THREAD_SAFE_METHOD_
 
 	ERR_FAIL_COND(!windows.has(p_window_id));
@@ -461,14 +484,14 @@ void DisplayServerQnx::window_set_current_screen(int p_screen, DisplayServer::Wi
 	wd.current_screen = p_screen;
 }
 
-Point2i DisplayServerQnx::window_get_position(DisplayServer::WindowID p_window_id) const {
+Point2i DisplayServerQnx::window_get_position(DisplayServerEnums::WindowID p_window_id) const {
 	_THREAD_SAFE_METHOD_
 
 	ERR_FAIL_COND_V(!windows.has(p_window_id), Point2i());
 	return windows[p_window_id].rect.position;
 }
 
-void DisplayServerQnx::gl_window_make_current(DisplayServer::WindowID p_window_id) {
+void DisplayServerQnx::gl_window_make_current(DisplayServerEnums::WindowID p_window_id) {
 #ifdef GLES3_ENABLED
 	if (egl_manager) {
 		egl_manager->window_make_current(p_window_id);
@@ -476,19 +499,19 @@ void DisplayServerQnx::gl_window_make_current(DisplayServer::WindowID p_window_i
 #endif
 }
 
-void DisplayServerQnx::window_set_transient(DisplayServer::WindowID p_window_id, WindowID p_parent) {
+void DisplayServerQnx::window_set_transient(DisplayServerEnums::WindowID p_window_id, DisplayServerEnums::WindowID p_parent) {
 	// Currently unsupported.
 }
 
-bool DisplayServerQnx::window_can_draw(DisplayServer::WindowID p_window_id) const {
-	return window_get_mode(p_window_id) != WINDOW_MODE_MINIMIZED;
+bool DisplayServerQnx::window_can_draw(DisplayServerEnums::WindowID p_window_id) const {
+	return window_get_mode(p_window_id) != DisplayServerEnums::WINDOW_MODE_MINIMIZED;
 }
 
 bool DisplayServerQnx::can_any_window_draw() const {
 	_THREAD_SAFE_METHOD_
 
-	for (const KeyValue<WindowID, WindowData> &E : windows) {
-		if (window_get_mode(E.key) != WINDOW_MODE_MINIMIZED) {
+	for (const KeyValue<DisplayServerEnums::WindowID, WindowData> &E : windows) {
+		if (window_get_mode(E.key) != DisplayServerEnums::WINDOW_MODE_MINIMIZED) {
 			return true;
 		}
 	}
@@ -500,7 +523,7 @@ bool DisplayServerQnx::can_any_window_draw() const {
 // 1.30 added a protocol for allowing async flips which is supposed to be
 // handled by drivers such as Vulkan. We can then just ask to disable v-sync and
 // hope for the best. See: https://gitlab.freedesktop.org/wayland/wayland-protocols/-/commit/6394f0b4f3be151076f10a845a2fb131eeb56706
-void DisplayServerQnx::window_set_vsync_mode(DisplayServer::VSyncMode p_vsync_mode, DisplayServer::WindowID p_window_id) {
+void DisplayServerQnx::window_set_vsync_mode(DisplayServerEnums::VSyncMode p_vsync_mode, DisplayServerEnums::WindowID p_window_id) {
 #ifdef VULKAN_ENABLED
 	if (rendering_context) {
 		rendering_context->window_set_vsync_mode(p_window_id, p_vsync_mode);
@@ -509,12 +532,12 @@ void DisplayServerQnx::window_set_vsync_mode(DisplayServer::VSyncMode p_vsync_mo
 
 #ifdef GLES3_ENABLED
 	if (egl_manager) {
-		egl_manager->set_use_vsync(p_vsync_mode != DisplayServer::VSYNC_DISABLED);
+		egl_manager->set_use_vsync(p_vsync_mode != DisplayServerEnums::VSYNC_DISABLED);
 	}
 #endif // GLES3_ENABLED
 }
 
-DisplayServer::VSyncMode DisplayServerQnx::window_get_vsync_mode(DisplayServer::WindowID p_window_id) const {
+DisplayServerEnums::VSyncMode DisplayServerQnx::window_get_vsync_mode(DisplayServerEnums::WindowID p_window_id) const {
 #ifdef VULKAN_ENABLED
 	if (rendering_context) {
 		return rendering_context->window_get_vsync_mode(p_window_id);
@@ -523,11 +546,11 @@ DisplayServer::VSyncMode DisplayServerQnx::window_get_vsync_mode(DisplayServer::
 
 #ifdef GLES3_ENABLED
 	if (egl_manager) {
-		return egl_manager->is_using_vsync() ? DisplayServer::VSYNC_ENABLED : DisplayServer::VSYNC_DISABLED;
+		return egl_manager->is_using_vsync() ? DisplayServerEnums::VSYNC_ENABLED : DisplayServerEnums::VSYNC_DISABLED;
 	}
 #endif // GLES3_ENABLED
 
-	return DisplayServer::VSYNC_ENABLED;
+	return DisplayServerEnums::VSYNC_ENABLED;
 }
 
 void DisplayServerQnx::process_events() {
@@ -536,8 +559,8 @@ void DisplayServerQnx::process_events() {
 	LocalVector<QnxScreenThread::ScreenEvent> events = screen_thread.get_polled_events();
 
 	for (const QnxScreenThread::ScreenEvent &event : events) {
-		WindowID window_id = MAIN_WINDOW_ID;
-		for (const KeyValue<WindowID, WindowData> &E : windows) {
+		DisplayServerEnums::WindowID window_id = DisplayServerEnums::MAIN_WINDOW_ID;
+		for (const KeyValue<DisplayServerEnums::WindowID, WindowData> &E : windows) {
 			if (E.value.screen_window == event.screen_window) {
 				window_id = E.key;
 				break;
@@ -555,11 +578,11 @@ void DisplayServerQnx::process_events() {
 			} break;
 			case SCREEN_EVENT_POINTER: {
 				if (window_id != window_mouseover_id) {
-					if ((window_mouseover_id != INVALID_WINDOW_ID) && windows.has(window_mouseover_id)) {
-						_send_window_event(windows[window_mouseover_id], WINDOW_EVENT_MOUSE_EXIT);
+					if ((window_mouseover_id != DisplayServerEnums::INVALID_WINDOW_ID) && windows.has(window_mouseover_id)) {
+						_send_window_event(windows[window_mouseover_id], DisplayServerEnums::WINDOW_EVENT_MOUSE_EXIT);
 					}
 					window_mouseover_id = window_id;
-					_send_window_event(windows[window_id], WINDOW_EVENT_MOUSE_ENTER);
+					_send_window_event(windows[window_id], DisplayServerEnums::WINDOW_EVENT_MOUSE_ENTER);
 				}
 				screen_thread.process_pointer_event(event.pointer, window_id, windows[window_id].rect_relative, screen_pos);
 			} break;
@@ -576,23 +599,15 @@ void DisplayServerQnx::process_events() {
 							// window gained focus
 							DEBUG_LOG_QNX(vformat("Window ID %d gained focus.", window_id));
 							windows[window_id].focused = true;
-#ifdef ACCESSKIT_ENABLED
-							if (accessibility_driver) {
-								accessibility_driver->accessibility_set_window_focused(window_id, true);
-							}
-#endif
-							_send_window_event(windows[window_id], WINDOW_EVENT_FOCUS_IN);
+							AccessibilityServer::get_singleton()->set_window_focused(window_id, true);
+							_send_window_event(windows[window_id], DisplayServerEnums::WINDOW_EVENT_FOCUS_IN);
 						} else {
 							// window lost focus
 							DEBUG_LOG_QNX(vformat("Window ID %d lost focus.", window_id));
 							windows[window_id].focused = false;
 							Input::get_singleton()->release_pressed_events();
-#ifdef ACCESSKIT_ENABLED
-							if (accessibility_driver) {
-								accessibility_driver->accessibility_set_window_focused(window_id, false);
-							}
-#endif
-							_send_window_event(windows[window_id], WINDOW_EVENT_FOCUS_OUT);
+							AccessibilityServer::get_singleton()->set_window_focused(window_id, false);
+							_send_window_event(windows[window_id], DisplayServerEnums::WINDOW_EVENT_FOCUS_OUT);
 						}
 					}
 				}
@@ -622,7 +637,7 @@ void DisplayServerQnx::swap_buffers() {
 #endif
 }
 
-void DisplayServerQnx::set_context(Context p_context) {
+void DisplayServerQnx::set_context(DisplayServerEnums::Context p_context) {
 }
 
 bool DisplayServerQnx::is_window_transparency_available() const {
@@ -649,7 +664,7 @@ Vector<String> DisplayServerQnx::get_rendering_drivers_func() {
 }
 
 void DisplayServerQnx::_mouse_update_mode() {
-	MouseMode wanted_mouse_mode = mouse_mode_override_enabled
+	DisplayServerEnums::MouseMode wanted_mouse_mode = mouse_mode_override_enabled
 			? mouse_mode_override
 			: mouse_mode_base;
 
@@ -657,10 +672,10 @@ void DisplayServerQnx::_mouse_update_mode() {
 		return;
 	}
 
-	bool show_cursor = (wanted_mouse_mode == MOUSE_MODE_VISIBLE || wanted_mouse_mode == MOUSE_MODE_CONFINED);
+	bool show_cursor = (wanted_mouse_mode == DisplayServerEnums::MOUSE_MODE_VISIBLE || wanted_mouse_mode == DisplayServerEnums::MOUSE_MODE_CONFINED);
 	int qnx_cursor_shape = show_cursor ? _godot_cursor_to_qnx_cursor(current_cursor) : SCREEN_CURSOR_SHAPE_NONE;
 
-	for (const KeyValue<WindowID, WindowData> &E : windows) {
+	for (const KeyValue<DisplayServerEnums::WindowID, WindowData> &E : windows) {
 		WindowData &wd = windows[E.key];
 
 		if (0 != screen_set_session_property_iv(wd.pointer_session, SCREEN_PROPERTY_CURSOR, &qnx_cursor_shape)) {
@@ -671,8 +686,8 @@ void DisplayServerQnx::_mouse_update_mode() {
 	mouse_mode = wanted_mouse_mode;
 }
 
-void DisplayServerQnx::mouse_set_mode(MouseMode p_mode) {
-	ERR_FAIL_INDEX(p_mode, MouseMode::MOUSE_MODE_MAX);
+void DisplayServerQnx::mouse_set_mode(DisplayServerEnums::MouseMode p_mode) {
+	ERR_FAIL_INDEX(p_mode, DisplayServerEnums::MouseMode::MOUSE_MODE_MAX);
 	if (p_mode == mouse_mode_base) {
 		return;
 	}
@@ -680,12 +695,12 @@ void DisplayServerQnx::mouse_set_mode(MouseMode p_mode) {
 	_mouse_update_mode();
 }
 
-DisplayServer::MouseMode DisplayServerQnx::mouse_get_mode() const {
+DisplayServerEnums::MouseMode DisplayServerQnx::mouse_get_mode() const {
 	return mouse_mode;
 }
 
-void DisplayServerQnx::mouse_set_mode_override(MouseMode p_mode) {
-	ERR_FAIL_INDEX(p_mode, MouseMode::MOUSE_MODE_MAX);
+void DisplayServerQnx::mouse_set_mode_override(DisplayServerEnums::MouseMode p_mode) {
+	ERR_FAIL_INDEX(p_mode, DisplayServerEnums::MouseMode::MOUSE_MODE_MAX);
 	if (p_mode == mouse_mode_override) {
 		return;
 	}
@@ -693,7 +708,7 @@ void DisplayServerQnx::mouse_set_mode_override(MouseMode p_mode) {
 	_mouse_update_mode();
 }
 
-DisplayServer::MouseMode DisplayServerQnx::mouse_get_mode_override() const {
+DisplayServerEnums::MouseMode DisplayServerQnx::mouse_get_mode_override() const {
 	return mouse_mode_override;
 }
 
@@ -714,10 +729,10 @@ BitField<MouseButtonMask> DisplayServerQnx::mouse_get_button_state() const {
 	return screen_thread.mouse_get_button_state();
 }
 
-void DisplayServerQnx::cursor_set_shape(CursorShape p_shape) {
+void DisplayServerQnx::cursor_set_shape(DisplayServerEnums::CursorShape p_shape) {
 	_THREAD_SAFE_METHOD_
 
-	ERR_FAIL_INDEX(p_shape, CURSOR_MAX);
+	ERR_FAIL_INDEX(p_shape, DisplayServerEnums::CURSOR_MAX);
 
 	if (p_shape == current_cursor) {
 		return;
@@ -725,7 +740,7 @@ void DisplayServerQnx::cursor_set_shape(CursorShape p_shape) {
 
 	int qnx_cursor_shape = _godot_cursor_to_qnx_cursor(p_shape);
 
-	for (const KeyValue<WindowID, WindowData> &E : windows) {
+	for (const KeyValue<DisplayServerEnums::WindowID, WindowData> &E : windows) {
 		WindowData &wd = windows[E.key];
 
 		// Currently only default cursors are supported.
@@ -738,11 +753,11 @@ void DisplayServerQnx::cursor_set_shape(CursorShape p_shape) {
 	DEBUG_LOG_QNX(vformat("Cursor shape set to %d.", qnx_cursor_shape));
 }
 
-DisplayServerQnx::CursorShape DisplayServerQnx::cursor_get_shape() const {
+DisplayServerEnums::CursorShape DisplayServerQnx::cursor_get_shape() const {
 	return current_cursor;
 }
 
-DisplayServer *DisplayServerQnx::create_func(const String &p_rendering_driver, WindowMode p_mode, VSyncMode p_vsync_mode, uint32_t p_flags, const Vector2i *p_position, const Vector2i &p_resolution, int p_screen, Context p_context, int64_t p_parent_window, Error &r_error) {
+DisplayServer *DisplayServerQnx::create_func(const String &p_rendering_driver, DisplayServerEnums::WindowMode p_mode, DisplayServerEnums::VSyncMode p_vsync_mode, uint32_t p_flags, const Vector2i *p_position, const Vector2i &p_resolution, int p_screen, DisplayServerEnums::Context p_context, int64_t p_parent_window, Error &r_error) {
 	DisplayServer *ds = memnew(DisplayServerQnx(p_rendering_driver, p_mode, p_vsync_mode, p_flags, p_position, p_resolution, p_screen, p_context, p_parent_window, r_error));
 	if (r_error != OK) {
 		ERR_PRINT("Can't create the QNX display server.");
@@ -761,7 +776,7 @@ void DisplayServerQnx::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_qnx_screen_context"), &DisplayServerQnx::get_qnx_screen_context);
 }
 
-DisplayServerQnx::DisplayServerQnx(const String &p_rendering_driver, WindowMode p_mode, VSyncMode p_vsync_mode, uint32_t p_flags, const Vector2i *p_position, const Vector2i &p_resolution, int p_screen, Context p_context, int64_t p_parent_window, Error &r_error) {
+DisplayServerQnx::DisplayServerQnx(const String &p_rendering_driver, DisplayServerEnums::WindowMode p_mode, DisplayServerEnums::VSyncMode p_vsync_mode, uint32_t p_flags, const Vector2i *p_position, const Vector2i &p_resolution, int p_screen, DisplayServerEnums::Context p_context, int64_t p_parent_window, Error &r_error) {
 	r_error = ERR_UNAVAILABLE;
 
 	default_display = &DEFAULT_DISPLAY_ID;
@@ -811,8 +826,8 @@ DisplayServerQnx::DisplayServerQnx(const String &p_rendering_driver, WindowMode 
 			if (fallback_to_opengl3 && rendering_driver != "opengl3") {
 				WARN_PRINT("Your video card drivers seem not to support the required Vulkan version, switching to OpenGL ES 3.");
 				rendering_driver = "opengl3";
-				OS::get_singleton()->set_current_rendering_method("gl_compatibility");
-				OS::get_singleton()->set_current_rendering_driver_name(rendering_driver);
+				OS::get_singleton()->set_current_rendering_method("gl_compatibility", OS::RENDERING_SOURCE_FALLBACK);
+				OS::get_singleton()->set_current_rendering_driver_name(rendering_driver, OS::RENDERING_SOURCE_FALLBACK);
 			} else
 #endif // GLES3_ENABLED
 			{
@@ -867,15 +882,15 @@ DisplayServerQnx::DisplayServerQnx(const String &p_rendering_driver, WindowMode 
 		ERR_FAIL_MSG("Video driver not found.");
 	}
 
-	cursor_set_shape(CURSOR_BUSY);
+	cursor_set_shape(DisplayServerEnums::CURSOR_BUSY);
 
 	Point2i window_position;
 	if (p_position != nullptr) {
 		window_position = *p_position;
 		print_verbose(vformat("Window position: %d, %d", window_position.x, window_position.y));
 	} else {
-		if (p_screen == SCREEN_OF_MAIN_WINDOW) {
-			p_screen = SCREEN_PRIMARY;
+		if (p_screen == DisplayServerEnums::SCREEN_OF_MAIN_WINDOW) {
+			p_screen = DisplayServerEnums::SCREEN_PRIMARY;
 		}
 
 		Rect2i scr_rect = screen_get_usable_rect(p_screen);
@@ -883,14 +898,14 @@ DisplayServerQnx::DisplayServerQnx(const String &p_rendering_driver, WindowMode 
 		window_position = scr_rect.position + (scr_rect.size - p_resolution) / 2;
 	}
 	print_verbose(vformat("window resolution: %d, %d", p_resolution.x, p_resolution.y));
-	WindowID main_window = _create_window(p_mode, p_vsync_mode, p_flags, Rect2i(window_position, p_resolution), (screen_window_t)p_parent_window);
-	if (main_window == INVALID_WINDOW_ID) {
+	DisplayServerEnums::WindowID main_window = _create_window(p_mode, p_vsync_mode, p_flags, Rect2i(window_position, p_resolution), (screen_window_t)p_parent_window);
+	if (main_window == DisplayServerEnums::INVALID_WINDOW_ID) {
 		r_error = ERR_CANT_CREATE;
 		return;
 	}
-	for (int i = 0; i < WINDOW_FLAG_MAX; i++) {
+	for (int i = 0; i < DisplayServerEnums::WINDOW_FLAG_MAX; i++) {
 		if (p_flags & (1 << i)) {
-			window_set_flag(WindowFlags(i), true, main_window);
+			window_set_flag(DisplayServerEnums::WindowFlags(i), true, main_window);
 		}
 	}
 
@@ -903,7 +918,7 @@ DisplayServerQnx::DisplayServerQnx(const String &p_rendering_driver, WindowMode 
 #if defined(RD_ENABLED)
 	if (rendering_context) {
 		rendering_device = memnew(RenderingDevice);
-		if (rendering_device->initialize(rendering_context, MAIN_WINDOW_ID) != OK) {
+		if (rendering_device->initialize(rendering_context, DisplayServerEnums::MAIN_WINDOW_ID) != OK) {
 			memdelete(rendering_device);
 			rendering_device = nullptr;
 			memdelete(rendering_context);
@@ -911,7 +926,7 @@ DisplayServerQnx::DisplayServerQnx(const String &p_rendering_driver, WindowMode 
 			r_error = ERR_UNAVAILABLE;
 			return;
 		}
-		rendering_device->screen_create(MAIN_WINDOW_ID);
+		rendering_device->screen_create(DisplayServerEnums::MAIN_WINDOW_ID);
 
 		RendererCompositorRD::make_current();
 	}
@@ -925,7 +940,7 @@ DisplayServerQnx::~DisplayServerQnx() {
 		native_menu = nullptr;
 	}
 
-	for (KeyValue<WindowID, WindowData> &E : windows) {
+	for (KeyValue<DisplayServerEnums::WindowID, WindowData> &E : windows) {
 #if defined(RD_ENABLED)
 		if (rendering_device) {
 			rendering_device->screen_free(E.key);
@@ -976,10 +991,10 @@ void DisplayServerQnx::register_qnx_driver() {
 	register_create_function("qnx", create_func, get_rendering_drivers_func);
 }
 
-DisplayServerQnx::WindowID DisplayServerQnx::_create_window(WindowMode p_mode, VSyncMode p_vsync_mode, uint32_t p_flags, const Rect2i &p_rect, screen_window_t p_parent_window) {
+DisplayServerEnums::WindowID DisplayServerQnx::_create_window(DisplayServerEnums::WindowMode p_mode, DisplayServerEnums::VSyncMode p_vsync_mode, uint32_t p_flags, const Rect2i &p_rect, screen_window_t p_parent_window) {
 	//Create window
 
-	WindowID id = window_id_counter++;
+	DisplayServerEnums::WindowID id = window_id_counter++;
 	WindowData &wd = windows[id];
 
 	int rq_screen = get_screen_from_rect(p_rect);
@@ -988,11 +1003,11 @@ DisplayServerQnx::WindowID DisplayServerQnx::_create_window(WindowMode p_mode, V
 	}
 	wd.current_screen = rq_screen;
 
-	WindowID parent_window_id = INVALID_WINDOW_ID;
+	DisplayServerEnums::WindowID parent_window_id = DisplayServerEnums::INVALID_WINDOW_ID;
 	Rect2i win_rect = p_rect;
 	Point2i parent_rel_pos;
 	if (p_parent_window) {
-		for (const KeyValue<WindowID, WindowData> &E : windows) {
+		for (const KeyValue<DisplayServerEnums::WindowID, WindowData> &E : windows) {
 			if (E.value.screen_window == p_parent_window) {
 				parent_window_id = E.key;
 				parent_rel_pos = E.value.rect_relative.position;
@@ -1001,7 +1016,7 @@ DisplayServerQnx::WindowID DisplayServerQnx::_create_window(WindowMode p_mode, V
 		}
 	} else {
 		// No parent.
-		if (p_mode == WINDOW_MODE_FULLSCREEN || p_mode == WINDOW_MODE_EXCLUSIVE_FULLSCREEN) {
+		if (p_mode == DisplayServerEnums::WINDOW_MODE_FULLSCREEN || p_mode == DisplayServerEnums::WINDOW_MODE_EXCLUSIVE_FULLSCREEN) {
 			Rect2i screen_rect = Rect2i(screen_get_position(rq_screen), screen_get_size(rq_screen));
 
 			win_rect = screen_rect;
@@ -1018,20 +1033,20 @@ DisplayServerQnx::WindowID DisplayServerQnx::_create_window(WindowMode p_mode, V
 
 	int res = 0;
 
-	const int window_type = (p_flags & WINDOW_FLAG_POPUP) ? SCREEN_CHILD_WINDOW : SCREEN_APPLICATION_WINDOW;
+	const int window_type = (p_flags & DisplayServerEnums::WINDOW_FLAG_POPUP) ? SCREEN_CHILD_WINDOW : SCREEN_APPLICATION_WINDOW;
 	res = screen_create_window_type(&wd.screen_window, m_screenContext, window_type);
-	ERR_FAIL_COND_V_MSG(0 != res, INVALID_WINDOW_ID, "screen_create_window() failed");
+	ERR_FAIL_COND_V_MSG(0 != res, DisplayServerEnums::INVALID_WINDOW_ID, "screen_create_window() failed");
 
 	const int screen_count = get_screen_count();
-	ERR_FAIL_INDEX_V_MSG(rq_screen, screen_count, INVALID_WINDOW_ID, "Requested screen index is out of bounds.");
+	ERR_FAIL_INDEX_V_MSG(rq_screen, screen_count, DisplayServerEnums::INVALID_WINDOW_ID, "Requested screen index is out of bounds.");
 
 	screen_display_t display = screen_thread.get_screen_handle(rq_screen);
 	res = screen_set_window_property_pv(wd.screen_window, SCREEN_PROPERTY_DISPLAY, reinterpret_cast<void **>(&display));
-	ERR_FAIL_COND_V_MSG(0 != res, INVALID_WINDOW_ID, "Failed to set screen " + itos(rq_screen) + " for window " + itos(id) + ".");
+	ERR_FAIL_COND_V_MSG(0 != res, DisplayServerEnums::INVALID_WINDOW_ID, "Failed to set screen " + itos(rq_screen) + " for window " + itos(id) + ".");
 
 	constexpr int screen_format = SCREEN_FORMAT_RGBA8888;
 	res = screen_set_window_property_iv(wd.screen_window, SCREEN_PROPERTY_FORMAT, &screen_format);
-	ERR_FAIL_COND_V_MSG(0 != res, INVALID_WINDOW_ID, "setting SCREEN_PROPERTY_FORMAT " + itos(screen_format) + " failed");
+	ERR_FAIL_COND_V_MSG(0 != res, DisplayServerEnums::INVALID_WINDOW_ID, "setting SCREEN_PROPERTY_FORMAT " + itos(screen_format) + " failed");
 
 	int screen_usage = 0;
 #ifdef VULKAN_ENABLED
@@ -1045,19 +1060,19 @@ DisplayServerQnx::WindowID DisplayServerQnx::_create_window(WindowMode p_mode, V
 	}
 #endif // GLES3_ENABLED
 	res = screen_set_window_property_iv(wd.screen_window, SCREEN_PROPERTY_USAGE, &screen_usage);
-	ERR_FAIL_COND_V_MSG(0 != res, INVALID_WINDOW_ID, "setting SCREEN_PROPERTY_USAGE " + itos(screen_usage) + " failed");
+	ERR_FAIL_COND_V_MSG(0 != res, DisplayServerEnums::INVALID_WINDOW_ID, "setting SCREEN_PROPERTY_USAGE " + itos(screen_usage) + " failed");
 
 	const int transparency = SCREEN_TRANSPARENCY_NONE;
 	res = screen_set_window_property_iv(wd.screen_window, SCREEN_PROPERTY_TRANSPARENCY, &transparency);
-	ERR_FAIL_COND_V_MSG(0 != res, INVALID_WINDOW_ID, "setting SCREEN_PROPERTY_TRANSPARENCY " + itos(transparency) + " failed");
+	ERR_FAIL_COND_V_MSG(0 != res, DisplayServerEnums::INVALID_WINDOW_ID, "setting SCREEN_PROPERTY_TRANSPARENCY " + itos(transparency) + " failed");
 
-	const int swap_interval = (p_vsync_mode != DisplayServer::VSYNC_DISABLED) ? 1 : 0;
+	const int swap_interval = (p_vsync_mode != DisplayServerEnums::VSYNC_DISABLED) ? 1 : 0;
 	res = screen_set_window_property_iv(wd.screen_window, SCREEN_PROPERTY_SWAP_INTERVAL, &swap_interval);
-	ERR_FAIL_COND_V_MSG(0 != res, INVALID_WINDOW_ID, "setting SCREEN_PROPERTY_SWAP_INTERVAL " + itos(swap_interval) + " failed");
+	ERR_FAIL_COND_V_MSG(0 != res, DisplayServerEnums::INVALID_WINDOW_ID, "setting SCREEN_PROPERTY_SWAP_INTERVAL " + itos(swap_interval) + " failed");
 
 	int window_size[2] = { wd.rect.size.width, wd.rect.size.height };
 	res = screen_set_window_property_iv(wd.screen_window, SCREEN_PROPERTY_SIZE, &window_size[0]);
-	ERR_FAIL_COND_V_MSG(0 != res, INVALID_WINDOW_ID, "setting SCREEN_PROPERTY_SIZE failed");
+	ERR_FAIL_COND_V_MSG(0 != res, DisplayServerEnums::INVALID_WINDOW_ID, "setting SCREEN_PROPERTY_SIZE failed");
 
 	Point2i screen_position = screen_get_position(rq_screen);
 	Point2i screen_rel_pos = win_rect.position - screen_position;
@@ -1069,10 +1084,10 @@ DisplayServerQnx::WindowID DisplayServerQnx::_create_window(WindowMode p_mode, V
 		// Join parent's window group.
 		char window_group_name[64] = { '\0' };
 		res = screen_get_window_property_cv(p_parent_window, SCREEN_PROPERTY_ID, sizeof(window_group_name), window_group_name);
-		ERR_FAIL_COND_V_MSG(0 != res, INVALID_WINDOW_ID, "get SCREEN_PROPERTY_ID failed");
+		ERR_FAIL_COND_V_MSG(0 != res, DisplayServerEnums::INVALID_WINDOW_ID, "get SCREEN_PROPERTY_ID failed");
 
 		res = screen_join_window_group(wd.screen_window, window_group_name);
-		ERR_FAIL_COND_V_MSG(0 != res, INVALID_WINDOW_ID, "screen_join_window_group() failed");
+		ERR_FAIL_COND_V_MSG(0 != res, DisplayServerEnums::INVALID_WINDOW_ID, "screen_join_window_group() failed");
 
 		DEBUG_LOG_QNX(vformat("Joined window group: %s", window_group_name));
 	} else {
@@ -1081,27 +1096,33 @@ DisplayServerQnx::WindowID DisplayServerQnx::_create_window(WindowMode p_mode, V
 	}
 	int window_pos[2] = { wd.rect_relative.position.x, wd.rect_relative.position.y };
 	res = screen_set_window_property_iv(wd.screen_window, SCREEN_PROPERTY_POSITION, &window_pos[0]);
-	ERR_FAIL_COND_V_MSG(0 != res, INVALID_WINDOW_ID, "setting SCREEN_PROPERTY_POSITION failed");
+	ERR_FAIL_COND_V_MSG(0 != res, DisplayServerEnums::INVALID_WINDOW_ID, "setting SCREEN_PROPERTY_POSITION failed");
 
 	DEBUG_LOG_QNX(vformat("Created window with rect: (%d, %d, %d, %d) on display %d, mode: %d, flags: %d, parent: %d",
 			window_pos[0], window_pos[1], window_size[0], window_size[1], rq_screen, p_mode, p_flags, parent_window_id));
 
-	if (p_flags & WINDOW_FLAG_NO_FOCUS) {
+	if (p_flags & DisplayServerEnums::WINDOW_FLAG_NO_FOCUS) {
 		const int sensitivity = SCREEN_SENSITIVITY_NO_FOCUS;
 		res = screen_set_window_property_iv(wd.screen_window, SCREEN_PROPERTY_SENSITIVITY, &sensitivity);
-		ERR_FAIL_COND_V_MSG(0 != res, INVALID_WINDOW_ID, "setting SCREEN_PROPERTY_SENSITIVITY failed");
+		ERR_FAIL_COND_V_MSG(0 != res, DisplayServerEnums::INVALID_WINDOW_ID, "setting SCREEN_PROPERTY_SENSITIVITY failed");
 	}
 
 	const int window_buffers = 2;
 	res = screen_create_window_buffers(wd.screen_window, window_buffers);
-	ERR_FAIL_COND_V_MSG(0 != res, INVALID_WINDOW_ID, vformat("screen_create_window_buffers() failed: %s", strerror(errno)));
+	ERR_FAIL_COND_V_MSG(0 != res, DisplayServerEnums::INVALID_WINDOW_ID, vformat("screen_create_window_buffers() failed: %s", strerror(errno)));
 
 	// Create pointer session per window to allow setting pointer shape
 	res = screen_create_session_type(&wd.pointer_session, m_screenContext, SCREEN_EVENT_POINTER);
-	ERR_FAIL_COND_V_MSG(0 != res, INVALID_WINDOW_ID, "screen_create_session_type() for pointer failed");
+	ERR_FAIL_COND_V_MSG(0 != res, DisplayServerEnums::INVALID_WINDOW_ID, "screen_create_session_type() for pointer failed");
 
 	res = screen_set_session_property_pv(wd.pointer_session, SCREEN_PROPERTY_WINDOW, (void **)&wd.screen_window);
-	ERR_FAIL_COND_V_MSG(0 != res, INVALID_WINDOW_ID, "screen_set_session_property_pv() for pointer failed");
+	ERR_FAIL_COND_V_MSG(0 != res, DisplayServerEnums::INVALID_WINDOW_ID, "screen_set_session_property_pv() for pointer failed");
+
+	if (!AccessibilityServer::get_singleton()->window_create(id, nullptr)) {
+		if (OS::get_singleton()->is_stdout_verbose()) {
+			ERR_PRINT("Can't create an accessibility adapter for window, accessibility support disabled!");
+		}
+	}
 
 #if defined(RD_ENABLED)
 	if (rendering_context) {
@@ -1117,7 +1138,7 @@ DisplayServerQnx::WindowID DisplayServerQnx::_create_window(WindowMode p_mode, V
 		}
 #endif
 		Error err = rendering_context->window_create(id, &wpd);
-		ERR_FAIL_COND_V_MSG(err != OK, INVALID_WINDOW_ID, vformat("Can't create a %s window", rendering_driver));
+		ERR_FAIL_COND_V_MSG(err != OK, DisplayServerEnums::INVALID_WINDOW_ID, vformat("Can't create a %s window", rendering_driver));
 
 		rendering_context->window_set_size(id, win_rect.size.width, win_rect.size.height);
 		rendering_context->window_set_vsync_mode(id, p_vsync_mode);
@@ -1126,7 +1147,7 @@ DisplayServerQnx::WindowID DisplayServerQnx::_create_window(WindowMode p_mode, V
 #ifdef GLES3_ENABLED
 	if (egl_manager) {
 		Error err = egl_manager->window_create(id, default_display, &wd.screen_window, win_rect.size.width, win_rect.size.height);
-		ERR_FAIL_COND_V_MSG(err != OK, INVALID_WINDOW_ID, "Can't create EGL window");
+		ERR_FAIL_COND_V_MSG(err != OK, DisplayServerEnums::INVALID_WINDOW_ID, "Can't create EGL window");
 	}
 
 	window_set_vsync_mode(p_vsync_mode, id);
@@ -1135,9 +1156,9 @@ DisplayServerQnx::WindowID DisplayServerQnx::_create_window(WindowMode p_mode, V
 	return id;
 }
 
-DisplayServer::WindowID DisplayServerQnx::get_window_at_screen_position(const Point2i &p_position) const {
-	WindowID found_window = INVALID_WINDOW_ID;
-	for (const KeyValue<WindowID, WindowData> &E : windows) {
+DisplayServerEnums::WindowID DisplayServerQnx::get_window_at_screen_position(const Point2i &p_position) const {
+	DisplayServerEnums::WindowID found_window = DisplayServerEnums::INVALID_WINDOW_ID;
+	for (const KeyValue<DisplayServerEnums::WindowID, WindowData> &E : windows) {
 		const WindowData &wd = E.value;
 
 		if (wd.rect.has_point(p_position)) {
@@ -1147,19 +1168,19 @@ DisplayServer::WindowID DisplayServerQnx::get_window_at_screen_position(const Po
 	return found_window;
 }
 
-void DisplayServerQnx::window_attach_instance_id(ObjectID p_instance, WindowID p_window_id) {
+void DisplayServerQnx::window_attach_instance_id(ObjectID p_instance, DisplayServerEnums::WindowID p_window_id) {
 	ERR_FAIL_COND(!windows.has(p_window_id));
 	WindowData &wd = windows[p_window_id];
 
 	wd.instance_id = p_instance;
 }
 
-ObjectID DisplayServerQnx::window_get_attached_instance_id(DisplayServer::WindowID p_window_id) const {
+ObjectID DisplayServerQnx::window_get_attached_instance_id(DisplayServerEnums::WindowID p_window_id) const {
 	ERR_FAIL_COND_V(!windows.has(p_window_id), ObjectID());
 	return windows[p_window_id].instance_id;
 }
 
-void DisplayServerQnx::window_set_rect_changed_callback(Callable const &p_callable, DisplayServer::WindowID p_window_id) {
+void DisplayServerQnx::window_set_rect_changed_callback(Callable const &p_callable, DisplayServerEnums::WindowID p_window_id) {
 	_THREAD_SAFE_METHOD_
 
 	ERR_FAIL_COND(!windows.has(p_window_id));
@@ -1167,7 +1188,7 @@ void DisplayServerQnx::window_set_rect_changed_callback(Callable const &p_callab
 	windows[p_window_id].rect_changed_callback = p_callable;
 }
 
-void DisplayServerQnx::window_set_window_event_callback(Callable const &p_callable, DisplayServer::WindowID p_window_id) {
+void DisplayServerQnx::window_set_window_event_callback(Callable const &p_callable, DisplayServerEnums::WindowID p_window_id) {
 	_THREAD_SAFE_METHOD_
 
 	ERR_FAIL_COND(!windows.has(p_window_id));
@@ -1175,7 +1196,7 @@ void DisplayServerQnx::window_set_window_event_callback(Callable const &p_callab
 	windows[p_window_id].window_event_callback = p_callable;
 }
 
-void DisplayServerQnx::window_set_input_event_callback(const Callable &p_callable, DisplayServer::WindowID p_window) {
+void DisplayServerQnx::window_set_input_event_callback(const Callable &p_callable, DisplayServerEnums::WindowID p_window) {
 	_THREAD_SAFE_METHOD_
 
 	ERR_FAIL_COND(!windows.has(p_window));
@@ -1183,7 +1204,7 @@ void DisplayServerQnx::window_set_input_event_callback(const Callable &p_callabl
 	windows[p_window].input_event_callback = p_callable;
 }
 
-void DisplayServerQnx::window_set_input_text_callback(const Callable &p_callable, DisplayServer::WindowID p_window) {
+void DisplayServerQnx::window_set_input_text_callback(const Callable &p_callable, DisplayServerEnums::WindowID p_window) {
 	_THREAD_SAFE_METHOD_
 
 	ERR_FAIL_COND(!windows.has(p_window));
@@ -1191,7 +1212,7 @@ void DisplayServerQnx::window_set_input_text_callback(const Callable &p_callable
 	windows[p_window].input_text_callback = p_callable;
 }
 
-void DisplayServerQnx::window_set_drop_files_callback(Callable const &p_callable, DisplayServer::WindowID p_window_id) {
+void DisplayServerQnx::window_set_drop_files_callback(Callable const &p_callable, DisplayServerEnums::WindowID p_window_id) {
 	_THREAD_SAFE_METHOD_
 
 	ERR_FAIL_COND(!windows.has(p_window_id));
@@ -1199,19 +1220,19 @@ void DisplayServerQnx::window_set_drop_files_callback(Callable const &p_callable
 	windows[p_window_id].drop_files_callback = p_callable;
 }
 
-void DisplayServerQnx::window_set_title(String const &, DisplayServer::WindowID) {
+void DisplayServerQnx::window_set_title(String const &, DisplayServerEnums::WindowID) {
 	//
 }
 
-void DisplayServerQnx::window_set_mouse_passthrough(Vector<Vector2> const &, DisplayServer::WindowID) {
+void DisplayServerQnx::window_set_mouse_passthrough(Vector<Vector2> const &, DisplayServerEnums::WindowID) {
 	DEBUG_LOG_QNX("window_set_mouse_passthrough is not supported on QNX.\n");
 }
 
-Point2i DisplayServerQnx::window_get_position_with_decorations(DisplayServer::WindowID p_window_id) const {
+Point2i DisplayServerQnx::window_get_position_with_decorations(DisplayServerEnums::WindowID p_window_id) const {
 	return window_get_position(p_window_id); // No decorations in QNX.
 }
 
-void DisplayServerQnx::window_set_position(const Vector2i &p_position, WindowID p_window_id) {
+void DisplayServerQnx::window_set_position(const Vector2i &p_position, DisplayServerEnums::WindowID p_window_id) {
 	_THREAD_SAFE_METHOD_
 
 	ERR_FAIL_COND(!windows.has(p_window_id));
@@ -1219,7 +1240,7 @@ void DisplayServerQnx::window_set_position(const Vector2i &p_position, WindowID 
 
 	wd.rect.position = p_position;
 
-	if (wd.parent != INVALID_WINDOW_ID) {
+	if (wd.parent != DisplayServerEnums::INVALID_WINDOW_ID) {
 		// For child windows, position is relative to parent window's position.
 		ERR_FAIL_COND_MSG(!windows.has(wd.parent), "Parent window does not exist");
 		WindowData &parent_wd = windows[wd.parent];
@@ -1238,23 +1259,23 @@ void DisplayServerQnx::window_set_position(const Vector2i &p_position, WindowID 
 	ERR_FAIL_COND_MSG(0 != res, "setting SCREEN_PROPERTY_POSITION failed");
 }
 
-void DisplayServerQnx::window_set_max_size(const Size2i p_size, WindowID p_window_id) {
+void DisplayServerQnx::window_set_max_size(const Size2i p_size, DisplayServerEnums::WindowID p_window_id) {
 	// Not supported
 }
 
-Size2i DisplayServerQnx::window_get_max_size(int) const {
+Size2i DisplayServerQnx::window_get_max_size(DisplayServerEnums::WindowID) const {
 	return Size2i();
 }
 
-void DisplayServerQnx::window_set_min_size(const Size2i p_size, WindowID p_window_id) {
+void DisplayServerQnx::window_set_min_size(const Size2i p_size, DisplayServerEnums::WindowID p_window_id) {
 	// Not supported
 }
 
-Size2i DisplayServerQnx::window_get_min_size(DisplayServer::WindowID p_window_id) const {
+Size2i DisplayServerQnx::window_get_min_size(DisplayServerEnums::WindowID p_window_id) const {
 	return Size2i();
 }
 
-void DisplayServerQnx::window_set_size(const Size2i p_size, WindowID p_window_id) {
+void DisplayServerQnx::window_set_size(const Size2i p_size, DisplayServerEnums::WindowID p_window_id) {
 	_THREAD_SAFE_METHOD_
 
 	ERR_FAIL_COND(!windows.has(p_window_id));
@@ -1282,18 +1303,18 @@ void DisplayServerQnx::window_set_size(const Size2i p_size, WindowID p_window_id
 	DEBUG_LOG_QNX(vformat("Window ID %d size set to: %d, %d", p_window_id, size.width, size.height));
 }
 
-Size2i DisplayServerQnx::window_get_size(DisplayServer::WindowID p_window_id) const {
+Size2i DisplayServerQnx::window_get_size(DisplayServerEnums::WindowID p_window_id) const {
 	_THREAD_SAFE_METHOD_
 
 	ERR_FAIL_COND_V(!windows.has(p_window_id), Size2i());
 	return windows[p_window_id].rect.size;
 }
 
-Size2i DisplayServerQnx::window_get_size_with_decorations(DisplayServer::WindowID p_window_id) const {
+Size2i DisplayServerQnx::window_get_size_with_decorations(DisplayServerEnums::WindowID p_window_id) const {
 	return window_get_size(p_window_id); // No decorations in QNX.
 }
 
-void DisplayServerQnx::window_set_mode(DisplayServer::WindowMode p_mode, DisplayServer::WindowID p_window_id) {
+void DisplayServerQnx::window_set_mode(DisplayServerEnums::WindowMode p_mode, DisplayServerEnums::WindowID p_window_id) {
 	_THREAD_SAFE_METHOD_
 
 	ERR_FAIL_COND(!windows.has(p_window_id));
@@ -1306,31 +1327,31 @@ void DisplayServerQnx::window_set_mode(DisplayServer::WindowMode p_mode, Display
 	WARN_PRINT("Window mode change is not supported on QNX.");
 }
 
-DisplayServer::WindowMode DisplayServerQnx::window_get_mode(DisplayServer::WindowID p_window_id) const {
+DisplayServerEnums::WindowMode DisplayServerQnx::window_get_mode(DisplayServerEnums::WindowID p_window_id) const {
 	_THREAD_SAFE_METHOD_
 
-	ERR_FAIL_COND_V(!windows.has(p_window_id), DisplayServer::WINDOW_MODE_WINDOWED);
+	ERR_FAIL_COND_V(!windows.has(p_window_id), DisplayServerEnums::WINDOW_MODE_WINDOWED);
 	return windows[p_window_id].mode;
 }
 
-bool DisplayServerQnx::window_is_maximize_allowed(DisplayServer::WindowID p_window_id) const {
+bool DisplayServerQnx::window_is_maximize_allowed(DisplayServerEnums::WindowID p_window_id) const {
 	return false;
 }
 
-void DisplayServerQnx::window_set_flag(DisplayServer::WindowFlags p_flag, bool p_enabled, DisplayServer::WindowID p_window_id) {
+void DisplayServerQnx::window_set_flag(DisplayServerEnums::WindowFlags p_flag, bool p_enabled, DisplayServerEnums::WindowID p_window_id) {
 	_THREAD_SAFE_METHOD_
 
 	ERR_FAIL_COND(!windows.has(p_window_id));
 	WindowData &wd = windows[p_window_id];
 
 	switch (p_flag) {
-		case WINDOW_FLAG_ALWAYS_ON_TOP: {
+		case DisplayServerEnums::WINDOW_FLAG_ALWAYS_ON_TOP: {
 			wd.on_top = p_enabled;
 		} break;
-		case WINDOW_FLAG_NO_FOCUS: {
+		case DisplayServerEnums::WINDOW_FLAG_NO_FOCUS: {
 			wd.no_focus = p_enabled;
 		} break;
-		case WINDOW_FLAG_POPUP: {
+		case DisplayServerEnums::WINDOW_FLAG_POPUP: {
 			wd.is_popup = p_enabled;
 		} break;
 		default: {
@@ -1339,20 +1360,20 @@ void DisplayServerQnx::window_set_flag(DisplayServer::WindowFlags p_flag, bool p
 	}
 }
 
-bool DisplayServerQnx::window_get_flag(DisplayServer::WindowFlags p_flag, DisplayServer::WindowID p_window_id) const {
+bool DisplayServerQnx::window_get_flag(DisplayServerEnums::WindowFlags p_flag, DisplayServerEnums::WindowID p_window_id) const {
 	_THREAD_SAFE_METHOD_
 
 	ERR_FAIL_COND_V(!windows.has(p_window_id), false);
 	const WindowData &wd = windows[p_window_id];
 
 	switch (p_flag) {
-		case WINDOW_FLAG_ALWAYS_ON_TOP: {
+		case DisplayServerEnums::WINDOW_FLAG_ALWAYS_ON_TOP: {
 			return wd.on_top;
 		} break;
-		case WINDOW_FLAG_NO_FOCUS: {
+		case DisplayServerEnums::WINDOW_FLAG_NO_FOCUS: {
 			return wd.no_focus;
 		} break;
-		case WINDOW_FLAG_POPUP: {
+		case DisplayServerEnums::WINDOW_FLAG_POPUP: {
 			return wd.is_popup;
 		} break;
 		default: {
@@ -1361,15 +1382,15 @@ bool DisplayServerQnx::window_get_flag(DisplayServer::WindowFlags p_flag, Displa
 	return false; // Unsupported flag, return false.
 }
 
-void DisplayServerQnx::window_request_attention(DisplayServer::WindowID) {
+void DisplayServerQnx::window_request_attention(DisplayServerEnums::WindowID) {
 	//
 }
 
-void DisplayServerQnx::window_move_to_foreground(DisplayServer::WindowID) {
+void DisplayServerQnx::window_move_to_foreground(DisplayServerEnums::WindowID) {
 	//
 }
 
-bool DisplayServerQnx::window_is_focused(DisplayServer::WindowID p_window_id) const {
+bool DisplayServerQnx::window_is_focused(DisplayServerEnums::WindowID p_window_id) const {
 	_THREAD_SAFE_METHOD_
 
 	ERR_FAIL_COND_V(!windows.has(p_window_id), false);
@@ -1379,7 +1400,7 @@ bool DisplayServerQnx::window_is_focused(DisplayServer::WindowID p_window_id) co
 	return wd.focused;
 }
 
-void DisplayServerQnx::_send_window_event(const WindowData &p_wd, DisplayServer::WindowEvent p_event) {
+void DisplayServerQnx::_send_window_event(const WindowData &p_wd, DisplayServerEnums::WindowEvent p_event) {
 	if (p_wd.window_event_callback.is_valid()) {
 		Variant event = int(p_event);
 		p_wd.window_event_callback.call(event);
@@ -1394,7 +1415,7 @@ void DisplayServerQnx::_dispatch_input_event(const Ref<InputEvent> &p_event) {
 	Ref<InputEventFromWindow> event_from_window = p_event;
 
 	if (event_from_window.is_valid()) {
-		WindowID window_id = event_from_window->get_window_id();
+		DisplayServerEnums::WindowID window_id = event_from_window->get_window_id();
 
 		if (windows.has(window_id)) {
 			Callable callable = windows[window_id].input_event_callback;
@@ -1405,7 +1426,7 @@ void DisplayServerQnx::_dispatch_input_event(const Ref<InputEvent> &p_event) {
 	} else {
 		// Send to all windows. Copy all pending callbacks, since callback can erase window.
 		Vector<Callable> cbs;
-		for (KeyValue<WindowID, WindowData> &E : windows) {
+		for (KeyValue<DisplayServerEnums::WindowID, WindowData> &E : windows) {
 			Callable callable = E.value.input_event_callback;
 			if (callable.is_valid()) {
 				cbs.push_back(callable);
@@ -1418,7 +1439,7 @@ void DisplayServerQnx::_dispatch_input_event(const Ref<InputEvent> &p_event) {
 	}
 }
 
-void DisplayServerQnx::_set_input_focus(WindowID p_window_id) {
+void DisplayServerQnx::_set_input_focus(DisplayServerEnums::WindowID p_window_id) {
 }
 
 #endif //QNX_ENABLED

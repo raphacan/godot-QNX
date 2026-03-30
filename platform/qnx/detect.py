@@ -155,6 +155,7 @@ def configure(env: "SConsEnvironment"):
         env.Append(CPPDEFINES=["SANITIZERS_ENABLED"])
 
         if env["use_ubsan"]:
+            env.Append(CPPDEFINES=["UBSAN_ENABLED"])
             env.Append(
                 CCFLAGS=[
                     "-fsanitize=undefined,shift,shift-exponent,integer-divide-by-zero,unreachable,vla-bound,null,return,signed-integer-overflow,bounds,float-divide-by-zero,float-cast-overflow,nonnull-attribute,returns-nonnull-attribute,bool,enum,vptr,pointer-overflow,builtin"
@@ -171,18 +172,22 @@ def configure(env: "SConsEnvironment"):
                 env.Append(CCFLAGS=["-fsanitize=bounds-strict"])
 
         if env["use_asan"]:
+            env.Append(CPPDEFINES=["ASAN_ENABLED"])
             env.Append(CCFLAGS=["-fsanitize=address,pointer-subtract,pointer-compare"])
             env.Append(LINKFLAGS=["-fsanitize=address"])
 
         if env["use_lsan"]:
+            env.Append(CPPDEFINES=["LSAN_ENABLED"])
             env.Append(CCFLAGS=["-fsanitize=leak"])
             env.Append(LINKFLAGS=["-fsanitize=leak"])
 
         if env["use_tsan"]:
+            env.Append(CPPDEFINES=["TSAN_ENABLED"])
             env.Append(CCFLAGS=["-fsanitize=thread"])
             env.Append(LINKFLAGS=["-fsanitize=thread"])
 
         if env["use_msan"] and env["use_llvm"]:
+            env.Append(CPPDEFINES=["MSAN_ENABLED"])
             env.Append(CCFLAGS=["-fsanitize=memory"])
             env.Append(CCFLAGS=["-fsanitize-memory-track-origins"])
             env.Append(CCFLAGS=["-fsanitize-recover=memory"])
@@ -308,7 +313,6 @@ def configure(env: "SConsEnvironment"):
     if not env["builtin_embree"] and env["arch"] in ["x86_64", "arm64"]:
         # No pkgconfig file so far, hardcode expected lib name.
         env.Append(LIBS=["embree4"])
-        print("ADDING EMBREE4 LIBS")
 
     if not env["builtin_openxr"]:
         env.ParseConfig("pkg-config openxr --cflags --libs")
@@ -455,23 +459,23 @@ def configure(env: "SConsEnvironment"):
         env.Append(CPPDEFINES=["WAYLAND_ENABLED"])
         env.Append(LIBS=["rt"])  # Needed by glibc, used by _allocate_shm_file
 
-    if env["accesskit"]:
-        if env["accesskit_sdk_path"] != "":
-            env.Prepend(CPPPATH=[env["accesskit_sdk_path"] + "/include"])
-            if env["arch"] == "arm64":
-                env.Append(LIBPATH=[env["accesskit_sdk_path"] + "/lib/linux/arm64/static/"])
-            elif env["arch"] == "arm32":
-                env.Append(LIBPATH=[env["accesskit_sdk_path"] + "/lib/linux/arm32/static/"])
-            elif env["arch"] == "rv64":
-                env.Append(LIBPATH=[env["accesskit_sdk_path"] + "/lib/linux/riscv64gc/static/"])
-            elif env["arch"] == "x86_64":
-                env.Append(LIBPATH=[env["accesskit_sdk_path"] + "/lib/linux/x86_64/static/"])
-            elif env["arch"] == "x86_32":
-                env.Append(LIBPATH=[env["accesskit_sdk_path"] + "/lib/linux/x86/static/"])
-            env.Append(LIBS=["accesskit"])
-        else:
-            env.Append(CPPDEFINES=["ACCESSKIT_DYNAMIC"])
-        env.Append(CPPDEFINES=["ACCESSKIT_ENABLED"])
+    # if env["accesskit"]:
+    #     if env["accesskit_sdk_path"] != "":
+    #         env.Prepend(CPPPATH=[env["accesskit_sdk_path"] + "/include"])
+    #         if env["arch"] == "arm64":
+    #             env.Append(LIBPATH=[env["accesskit_sdk_path"] + "/lib/linux/arm64/static/"])
+    #         elif env["arch"] == "arm32":
+    #             env.Append(LIBPATH=[env["accesskit_sdk_path"] + "/lib/linux/arm32/static/"])
+    #         elif env["arch"] == "rv64":
+    #             env.Append(LIBPATH=[env["accesskit_sdk_path"] + "/lib/linux/riscv64gc/static/"])
+    #         elif env["arch"] == "x86_64":
+    #             env.Append(LIBPATH=[env["accesskit_sdk_path"] + "/lib/linux/x86_64/static/"])
+    #         elif env["arch"] == "x86_32":
+    #             env.Append(LIBPATH=[env["accesskit_sdk_path"] + "/lib/linux/x86/static/"])
+    #         env.Append(LIBS=["accesskit"])
+    #     else:
+    #         env.Append(CPPDEFINES=["ACCESSKIT_DYNAMIC"])
+    #     env.Append(CPPDEFINES=["ACCESSKIT_ENABLED"])
 
     if env["vulkan"]:
         env.Append(CPPDEFINES=["VULKAN_ENABLED", "RD_ENABLED"])

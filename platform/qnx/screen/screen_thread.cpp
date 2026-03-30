@@ -29,8 +29,11 @@
 /**************************************************************************/
 
 #include "screen_thread.h"
-#include "key_mapping_qnx_screen.h"
 
+#include "core/input/input.h"
+#include "core/os/os.h"
+
+#include "key_mapping_qnx_screen.h"
 #include <sys/keycodes.h>
 
 Error QnxScreenThread::init(screen_context_t p_screen_context) {
@@ -170,7 +173,7 @@ float QnxScreenThread::get_screen_refresh_rate(int p_index) const {
 
 LocalVector<QnxScreenThread::ScreenEvent> QnxScreenThread::get_polled_events() {
 	MutexLock lock(mutex);
-	LocalVector<ScreenEvent> events = polled_events;
+	LocalVector<ScreenEvent> events(polled_events);
 	polled_events.clear();
 	return events;
 }
@@ -339,7 +342,7 @@ QnxScreenThread::PropertyEvent QnxScreenThread::_get_property_event(screen_event
 	return property_event;
 }
 
-void QnxScreenThread::process_pointer_event(const PointerEvent &p_pointer_event, DisplayServer::WindowID p_window_id, const Rect2i &p_window_rect, const Point2i &p_screen_pos) {
+void QnxScreenThread::process_pointer_event(const PointerEvent &p_pointer_event, DisplayServerEnums::WindowID p_window_id, const Rect2i &p_window_rect, const Point2i &p_screen_pos) {
 	BitField<MouseButtonMask> new_buttons_state = _qnx_button_mask_to_godot_button_mask(p_pointer_event.buttonMask);
 
 	if (p_pointer_event.wheel_vertical != 0) {
@@ -431,7 +434,7 @@ void QnxScreenThread::process_pointer_event(const PointerEvent &p_pointer_event,
 	}
 }
 
-void QnxScreenThread::process_keyboard_event(const KeyboardEvent &p_keyboard_event, DisplayServer::WindowID p_window_id) {
+void QnxScreenThread::process_keyboard_event(const KeyboardEvent &p_keyboard_event, DisplayServerEnums::WindowID p_window_id) {
 	char32_t unicode = p_keyboard_event.sym;
 	if (unicode >= KEYCODE_PC_KEYS) {
 		unicode = 0;
@@ -488,7 +491,7 @@ void QnxScreenThread::process_keyboard_event(const KeyboardEvent &p_keyboard_eve
 	Input::get_singleton()->parse_input_event(ev);
 }
 
-void QnxScreenThread::process_touch_event(const TouchEvent &p_touch, int p_type, DisplayServer::WindowID p_window_id, const Rect2i &p_window_rect) {
+void QnxScreenThread::process_touch_event(const TouchEvent &p_touch, int p_type, DisplayServerEnums::WindowID p_window_id, const Rect2i &p_window_rect) {
 	switch (p_type) {
 		case SCREEN_EVENT_MTOUCH_TOUCH: {
 			touch_events.push_back(p_touch);
