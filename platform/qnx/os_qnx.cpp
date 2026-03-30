@@ -34,21 +34,32 @@
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 #include "core/os/main_loop.h"
-#ifdef SDL_ENABLED
-#include "drivers/sdl/joypad_sdl.h"
-#endif
+#include "core/os/os.h"
 #include "core/profiling/profiling.h"
 #include "main/main.h"
 #include "servers/display/display_server.h"
 #include "servers/rendering/rendering_server.h"
 
-#ifdef QNX_ENABLED
-#include "screen/display_server_qnx.h"
+#ifdef SDL_ENABLED
+#include "drivers/sdl/joypad_sdl.h"
 #endif
+
+#include "screen/display_server_qnx.h"
 
 #include "modules/modules_enabled.gen.h" // For regex.
 #ifdef MODULE_REGEX_ENABLED
 #include "modules/regex/regex.h"
+#endif
+
+#if defined(RD_ENABLED)
+#include "servers/rendering/rendering_device.h"
+#endif
+
+#if defined(VULKAN_ENABLED)
+#include "screen/rendering_context_driver_vulkan_screen.h"
+#endif
+#if defined(GLES3_ENABLED)
+#include "drivers/gles3/rasterizer_gles3.h"
 #endif
 
 #include <dlfcn.h>
@@ -56,15 +67,12 @@
 #include <sys/types.h>
 #include <sys/utsname.h>
 #include <unistd.h>
+
 #include <cstdio>
 #include <cstdlib>
 
 #if __has_include(<mntent.h>)
 #include <mntent.h>
-#endif
-
-#if defined(__FreeBSD__)
-#include <sys/sysctl.h>
 #endif
 
 void OS_Qnx::alert(const String &p_alert, const String &p_title) {
@@ -500,40 +508,41 @@ Vector<String> OS_Qnx::lspci_get_device_value(Vector<String> vendor_device_id_ma
 }
 
 Error OS_Qnx::shell_open(const String &p_uri) {
-	Error ok;
-	int err_code;
 	List<String> args;
 	args.push_back(p_uri);
 
-	// Agnostic
-	ok = execute("xdg-open", args, nullptr, &err_code);
-	if (ok == OK && !err_code) {
+	// Use create_process() instead of execute() to avoid blocking the main thread.
+	// This prevents the UI from freezing when opening file managers or other applications.
+	Error ok = create_process("xdg-open", args);
+	if (ok == OK) {
 		return OK;
-	} else if (err_code == 2) {
-		return ERR_FILE_NOT_FOUND;
 	}
 	// GNOME
 	args.push_front("open"); // The command is `gio open`, so we need to add it to args
-	ok = execute("gio", args, nullptr, &err_code);
-	if (ok == OK && !err_code) {
+	ok = create_process("gio", args);
+	if (ok == OK) {
 		return OK;
-	} else if (err_code == 2) {
-		return ERR_FILE_NOT_FOUND;
 	}
 	args.pop_front();
-	ok = execute("gvfs-open", args, nullptr, &err_code);
-	if (ok == OK && !err_code) {
+	ok = create_process("gvfs-open", args);
+	if (ok == OK) {
 		return OK;
-	} else if (err_code == 2) {
-		return ERR_FILE_NOT_FOUND;
 	}
 	// KDE
-	ok = execute("kde-open5", args, nullptr, &err_code);
-	if (ok == OK && !err_code) {
+	ok = create_process("kde-open5", args);
+	if (ok == OK) {
 		return OK;
 	}
-	ok = execute("kde-open", args, nullptr, &err_code);
-	return !err_code ? ok : FAILED;
+	ok = create_process("kde-open", args);
+	if (ok == OK) {
+		return OK;
+	}
+	// XFCE
+	ok = create_process("exo-open", args);
+	if (ok == OK) {
+		return OK;
+	}
+	return FAILED;
 }
 
 bool OS_Qnx::_check_internal_feature_support(const String &p_feature) {
@@ -978,6 +987,46 @@ String OS_Qnx::get_system_ca_certificates() {
 	return f->get_as_text();
 }
 
+#ifdef TOOLS_ENABLED
+bool OS_Qnx::_test_create_rendering_device(const String &p_display_driver) const {
+	// Tests Rendering Device creation.
+
+	bool ok = false;
+#if defined(RD_ENABLED)
+	Error err;
+	RenderingContextDriver *rcd = nullptr;
+
+#if defined(VULKAN_ENABLED)
+	rcd = memnew(RenderingContextDriverVulkanScreen);
+#endif
+	if (rcd != nullptr) {
+		err = rcd->initialize();
+		if (err == OK) {
+			RenderingDevice *rd = memnew(RenderingDevice);
+			err = rd->initialize(rcd);
+			memdelete(rd);
+			rd = nullptr;
+			if (err == OK) {
+				ok = true;
+			}
+		}
+		memdelete(rcd);
+		rcd = nullptr;
+	}
+#endif
+	return ok;
+}
+
+bool OS_Qnx::_test_create_rendering_device_and_gl(const String &p_display_driver) const {
+	// Tests OpenGL context and Rendering Device simultaneous creation. This function is expected to crash on some drivers.
+
+#ifdef GLES3_ENABLED
+	RasterizerGLES3::make_current(true);
+#endif
+	return _test_create_rendering_device(p_display_driver);
+}
+#endif
+
 OS_Qnx::OS_Qnx() {
 	const char *locale = getenv("LANG");
 	if (locale == nullptr) {
@@ -993,10 +1042,6 @@ OS_Qnx::OS_Qnx() {
 
 #ifdef ALSA_ENABLED
 	AudioDriverManager::add_driver(&driver_alsa);
-#endif
-
-#ifdef X11_ENABLED
-	DisplayServerX11::register_x11_driver();
 #endif
 
 #ifdef WAYLAND_ENABLED
