@@ -30,6 +30,8 @@
 
 #include "api.h"
 
+#include "core/object/class_db.h"
+
 #if defined(QNX_ENABLED)
 
 #include "screen/display_server_qnx.h"

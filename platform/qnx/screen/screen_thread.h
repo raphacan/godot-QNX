@@ -32,8 +32,10 @@
 
 #include <screen/screen.h>
 
+#include "core/input/input_event.h"
 #include "core/os/thread.h"
-#include "servers/display/display_server.h"
+#include "core/templates/local_vector.h"
+#include "servers/display/display_server_enums.h"
 
 class QnxScreenThread {
 public:
@@ -175,7 +177,7 @@ public:
 
 	BitField<MouseButtonMask> mouse_get_button_state() const;
 
-	void process_keyboard_event(const KeyboardEvent &p_keyboard_event, DisplayServer::WindowID p_window_id);
-	void process_pointer_event(const PointerEvent &p_pointer_event, DisplayServer::WindowID p_window_id, const Rect2i &p_window_rect, const Point2i &p_screen_pos);
-	void process_touch_event(const TouchEvent &p_touch_event, int p_type, DisplayServer::WindowID p_window_id, const Rect2i &p_window_rect);
+	void process_keyboard_event(const KeyboardEvent &p_keyboard_event, DisplayServerEnums::WindowID p_window_id);
+	void process_pointer_event(const PointerEvent &p_pointer_event, DisplayServerEnums::WindowID p_window_id, const Rect2i &p_window_rect, const Point2i &p_screen_pos);
+	void process_touch_event(const TouchEvent &p_touch_event, int p_type, DisplayServerEnums::WindowID p_window_id, const Rect2i &p_window_rect);
 };
