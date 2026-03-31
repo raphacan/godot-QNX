@@ -31,13 +31,16 @@
 #include "display_server_windows.h"
 
 #include "drop_target_windows.h"
+#include "key_mapping_windows.h"
 #include "native_menu_windows.h"
 #include "os_windows.h"
+#include "tts_windows.h"
 #include "wgl_detect_version.h"
 
 #include "core/config/engine.h"
 #include "core/config/project_settings.h"
 #include "core/input/input.h"
+#include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 #include "core/io/marshalls.h"
 #include "core/io/xml_parser.h"
@@ -47,10 +50,10 @@
 #include "core/version.h"
 #include "drivers/png/png_driver_common.h"
 #include "main/main.h"
-#include "scene/main/window.h"
 #include "scene/resources/texture.h"
 #include "servers/display/accessibility_server.h"
 #include "servers/rendering/dummy/rasterizer_dummy.h"
+#include "servers/rendering/renderer_rd/renderer_compositor_rd.h"
 
 #ifdef SDL_ENABLED
 #include "drivers/sdl/joypad_sdl.h"
@@ -61,6 +64,7 @@
 #endif
 #if defined(D3D12_ENABLED)
 #include "drivers/d3d12/rendering_context_driver_d3d12.h"
+
 #include <dxgi1_6.h>
 #endif
 #if defined(GLES3_ENABLED)
@@ -561,13 +565,13 @@ void DisplayServerWindows::_thread_fd_monitor(void *p_ud) {
 			ds->file_dialog_wnd[hwnd_dialog] = fd;
 		}
 
-		HICON mainwindow_icon = (HICON)SendMessage(fd->hwnd_owner, WM_GETICON, ICON_SMALL, 0);
-		if (mainwindow_icon) {
-			SendMessage(hwnd_dialog, WM_SETICON, ICON_SMALL, (LPARAM)mainwindow_icon);
+		HICON w_icon = (HICON)SendMessage(fd->hwnd_owner, WM_GETICON, ICON_SMALL, 0);
+		if (w_icon) {
+			SendMessage(hwnd_dialog, WM_SETICON, ICON_SMALL, (LPARAM)w_icon);
 		}
-		mainwindow_icon = (HICON)SendMessage(fd->hwnd_owner, WM_GETICON, ICON_BIG, 0);
-		if (mainwindow_icon) {
-			SendMessage(hwnd_dialog, WM_SETICON, ICON_BIG, (LPARAM)mainwindow_icon);
+		w_icon = (HICON)SendMessage(fd->hwnd_owner, WM_GETICON, ICON_BIG, 0);
+		if (w_icon) {
+			SendMessage(hwnd_dialog, WM_SETICON, ICON_BIG, (LPARAM)w_icon);
 		}
 		IPropertyStore *prop_store;
 		HRESULT hr = SHGetPropertyStoreForWindow(hwnd_dialog, IID_IPropertyStore, (void **)&prop_store);
@@ -1540,11 +1544,11 @@ Ref<Image> DisplayServerWindows::screen_get_image_rect(const Rect2i &p_rect) con
 	POINT p2;
 	p2.x = pos.x + size.x;
 	p2.y = pos.y + size.y;
-	LogicalToPhysicalPointForPerMonitorDPI(0, &p1);
-	LogicalToPhysicalPointForPerMonitorDPI(0, &p2);
+	LogicalToPhysicalPointForPerMonitorDPI(nullptr, &p1);
+	LogicalToPhysicalPointForPerMonitorDPI(nullptr, &p2);
 
 	Ref<Image> img;
-	HDC dc = GetDC(0);
+	HDC dc = GetDC(nullptr);
 	if (dc) {
 		HDC hdc = CreateCompatibleDC(dc);
 		int width = p2.x - p1.x;
@@ -1577,7 +1581,7 @@ Ref<Image> DisplayServerWindows::screen_get_image_rect(const Rect2i &p_rect) con
 			}
 			DeleteDC(hdc);
 		}
-		ReleaseDC(NULL, dc);
+		ReleaseDC(nullptr, dc);
 	}
 
 	return img;
@@ -1775,7 +1779,7 @@ DisplayServerEnums::WindowID DisplayServerWindows::create_sub_window(DisplayServ
 #endif
 
 	DisplayServerEnums::WindowID window_id = window_id_counter;
-	Error err = _create_window(window_id, p_mode, p_flags, p_rect, p_exclusive, p_transient_parent, NULL, no_redirection_bitmap);
+	Error err = _create_window(window_id, p_mode, p_flags, p_rect, p_exclusive, p_transient_parent, nullptr, no_redirection_bitmap);
 	ERR_FAIL_COND_V_MSG(err != OK, DisplayServerEnums::INVALID_WINDOW_ID, "Failed to create sub window.");
 	++window_id_counter;
 
@@ -1917,7 +1921,15 @@ void DisplayServerWindows::delete_sub_window(DisplayServerEnums::WindowID p_wind
 	WindowData &wd = windows[p_window];
 
 	while (wd.transient_children.size()) {
-		window_set_transient(*wd.transient_children.begin(), DisplayServerEnums::INVALID_WINDOW_ID);
+		DisplayServerEnums::WindowID wid = *wd.transient_children.begin();
+		if (windows.has(wid)) {
+			WindowData &wd_window = windows[wid];
+			wd_window.transient_parent = DisplayServerEnums::INVALID_WINDOW_ID;
+			if (wd_window.exclusive) {
+				SetWindowLongPtr(wd_window.hWnd, GWLP_HWNDPARENT, (LONG_PTR) nullptr);
+			}
+		}
+		wd.transient_children.erase(wid);
 	}
 
 	if (wd.transient_parent != DisplayServerEnums::INVALID_WINDOW_ID) {
@@ -1934,9 +1946,11 @@ void DisplayServerWindows::delete_sub_window(DisplayServerEnums::WindowID p_wind
 	}
 #endif
 #ifdef GLES3_ENABLED
+#ifdef ANGLE_ENABLED
 	if (gl_manager_angle) {
 		gl_manager_angle->window_destroy(p_window);
 	}
+#endif
 	if (gl_manager_native) {
 		gl_manager_native->window_destroy(p_window);
 	}
@@ -1951,9 +1965,11 @@ void DisplayServerWindows::delete_sub_window(DisplayServerEnums::WindowID p_wind
 
 void DisplayServerWindows::gl_window_make_current(DisplayServerEnums::WindowID p_window_id) {
 #if defined(GLES3_ENABLED)
+#if defined(ANGLE_ENABLED)
 	if (gl_manager_angle) {
 		gl_manager_angle->window_make_current(p_window_id);
 	}
+#endif
 	if (gl_manager_native) {
 		gl_manager_native->window_make_current(p_window_id);
 	}
@@ -1981,21 +1997,27 @@ int64_t DisplayServerWindows::window_get_native_handle(DisplayServerEnums::Handl
 			if (gl_manager_native) {
 				return (int64_t)gl_manager_native->get_hglrc(p_window);
 			}
+#if defined(ANGLE_ENABLED)
 			if (gl_manager_angle) {
 				return (int64_t)gl_manager_angle->get_context(p_window);
 			}
+#endif
 			return 0;
 		}
 		case DisplayServerEnums::EGL_DISPLAY: {
+#if defined(ANGLE_ENABLED)
 			if (gl_manager_angle) {
 				return (int64_t)gl_manager_angle->get_display(p_window);
 			}
+#endif
 			return 0;
 		}
 		case DisplayServerEnums::EGL_CONFIG: {
+#if defined(ANGLE_ENABLED)
 			if (gl_manager_angle) {
 				return (int64_t)gl_manager_angle->get_config(p_window);
 			}
+#endif
 			return 0;
 		}
 #endif
@@ -2103,7 +2125,7 @@ Size2i DisplayServerWindows::window_get_title_size(const String &p_title, Displa
 			size.y = MAX(size.y, rect.bottom - rect.top);
 		}
 	}
-	if (icon_big) {
+	if (wd.icon_big || wd.icon_small) {
 		size.x += 32;
 	} else {
 		size.x += 16;
@@ -2565,15 +2587,26 @@ void DisplayServerWindows::_update_window_style(DisplayServerEnums::WindowID p_w
 	SetWindowLongPtr(wd.hWnd, GWL_STYLE, style);
 	SetWindowLongPtr(wd.hWnd, GWL_EXSTYLE, style_ex);
 
-	if (icon_big && !icon_small) {
-		SendMessage(wd.hWnd, WM_SETICON, ICON_BIG, (LPARAM)icon_big);
-		SendMessage(wd.hWnd, WM_SETICON, ICON_SMALL, (LPARAM)icon_big);
-	} else {
-		if (icon_big) {
-			SendMessage(wd.hWnd, WM_SETICON, ICON_BIG, (LPARAM)icon_big);
+	if (wd.icon_set) {
+		if (wd.icon_big && !wd.icon_small) {
+			SendMessage(wd.hWnd, WM_SETICON, ICON_BIG, (LPARAM)wd.icon_big);
+			SendMessage(wd.hWnd, WM_SETICON, ICON_SMALL, (LPARAM)wd.icon_big);
+		} else {
+			if (wd.icon_big) {
+				SendMessage(wd.hWnd, WM_SETICON, ICON_BIG, (LPARAM)wd.icon_big);
+			}
+			if (wd.icon_small) {
+				SendMessage(wd.hWnd, WM_SETICON, ICON_SMALL, (LPARAM)wd.icon_small);
+			}
 		}
-		if (icon_small) {
-			SendMessage(wd.hWnd, WM_SETICON, ICON_SMALL, (LPARAM)icon_small);
+	} else if (p_window != DisplayServerEnums::MAIN_WINDOW_ID) {
+		HICON mainwindow_icon = (HICON)SendMessage(windows[DisplayServerEnums::MAIN_WINDOW_ID].hWnd, WM_GETICON, ICON_SMALL, 0);
+		if (mainwindow_icon) {
+			SendMessage(wd.hWnd, WM_SETICON, ICON_SMALL, (LPARAM)mainwindow_icon);
+		}
+		mainwindow_icon = (HICON)SendMessage(windows[DisplayServerEnums::MAIN_WINDOW_ID].hWnd, WM_GETICON, ICON_BIG, 0);
+		if (mainwindow_icon) {
+			SendMessage(wd.hWnd, WM_SETICON, ICON_BIG, (LPARAM)mainwindow_icon);
 		}
 	}
 
@@ -2943,7 +2976,7 @@ void DisplayServerWindows::window_set_taskbar_progress_value(float p_value, Disp
 		return;
 	}
 	if (taskbar == nullptr) {
-		if (CoCreateInstance(CLSID_TaskbarList, 0, CLSCTX_INPROC_SERVER, IID_ITaskbarList, (void **)&taskbar) != S_OK) {
+		if (CoCreateInstance(CLSID_TaskbarList, nullptr, CLSCTX_INPROC_SERVER, IID_ITaskbarList, (void **)&taskbar) != S_OK) {
 			taskbar = nullptr;
 			return;
 		} else {
@@ -2961,7 +2994,7 @@ void DisplayServerWindows::window_set_taskbar_progress_state(DisplayServerEnums:
 	WindowData &wd = windows[p_window];
 	wd.progress_state = p_state;
 	if (taskbar == nullptr) {
-		if (CoCreateInstance(CLSID_TaskbarList, 0, CLSCTX_INPROC_SERVER, IID_ITaskbarList, (void **)&taskbar) != S_OK) {
+		if (CoCreateInstance(CLSID_TaskbarList, nullptr, CLSCTX_INPROC_SERVER, IID_ITaskbarList, (void **)&taskbar) != S_OK) {
 			taskbar = nullptr;
 			return;
 		} else {
@@ -3355,7 +3388,7 @@ static BOOL CALLBACK _enum_proc_find_window_from_process_id_callback(HWND hWnd, 
 
 HWND DisplayServerWindows::_find_window_from_process_id(ProcessID p_pid, HWND p_current_hwnd) {
 	DWORD pid = p_pid;
-	WindowEnumData ed = { pid, p_current_hwnd, NULL };
+	WindowEnumData ed = { pid, p_current_hwnd, nullptr };
 
 	// First, check our own child, maybe it's already embedded.
 	if (!EnumChildWindows(p_current_hwnd, _enum_proc_find_window_from_process_id_callback, (LPARAM)&ed) && (GetLastError() == ERROR_SUCCESS)) {
@@ -3369,7 +3402,7 @@ HWND DisplayServerWindows::_find_window_from_process_id(ProcessID p_pid, HWND p_
 		return ed.hWnd;
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 // Get screen HDR capabilities for internal use only.
@@ -4178,9 +4211,11 @@ void DisplayServerWindows::force_process_and_drop_events() {
 
 void DisplayServerWindows::release_rendering_thread() {
 #if defined(GLES3_ENABLED)
+#if defined(ANGLE_ENABLED)
 	if (gl_manager_angle) {
 		gl_manager_angle->release_current();
 	}
+#endif
 	if (gl_manager_native) {
 		gl_manager_native->release_current();
 	}
@@ -4189,9 +4224,11 @@ void DisplayServerWindows::release_rendering_thread() {
 
 void DisplayServerWindows::swap_buffers() {
 #if defined(GLES3_ENABLED)
+#if defined(ANGLE_ENABLED)
 	if (gl_manager_angle) {
 		gl_manager_angle->swap_buffers();
 	}
+#endif
 	if (gl_manager_native) {
 		gl_manager_native->swap_buffers();
 	}
@@ -4199,17 +4236,29 @@ void DisplayServerWindows::swap_buffers() {
 }
 
 void DisplayServerWindows::set_native_icon(const String &p_filename) {
+	for (const KeyValue<DisplayServerEnums::WindowID, WindowData> &E : windows) {
+		if (E.value.icon_set && E.key != DisplayServerEnums::MAIN_WINDOW_ID) {
+			continue;
+		}
+		_window_set_native_icon(p_filename, E.key);
+	}
+}
+
+void DisplayServerWindows::_window_set_native_icon(const String &p_filename, DisplayServerEnums::WindowID p_window) {
 	_THREAD_SAFE_METHOD_
 
-	if (icon_big) {
-		DestroyIcon(icon_big);
-		icon_buffer_big.clear();
-		icon_big = nullptr;
+	ERR_FAIL_COND(!windows.has(p_window));
+	WindowData &wd = windows[p_window];
+
+	if (wd.icon_big) {
+		DestroyIcon(wd.icon_big);
+		wd.icon_buffer_big.clear();
+		wd.icon_big = nullptr;
 	}
-	if (icon_small) {
-		DestroyIcon(icon_small);
-		icon_buffer_small.clear();
-		icon_small = nullptr;
+	if (wd.icon_small) {
+		DestroyIcon(wd.icon_small);
+		wd.icon_buffer_small.clear();
+		wd.icon_small = nullptr;
 	}
 
 	Ref<FileAccess> f = FileAccess::open(p_filename, FileAccess::READ);
@@ -4269,45 +4318,65 @@ void DisplayServerWindows::set_native_icon(const String &p_filename) {
 
 	// Read the big icon.
 	DWORD bytecount_big = icon_dir->idEntries[big_icon_index].dwBytesInRes;
-	icon_buffer_big.resize(bytecount_big);
+	wd.icon_buffer_big.resize(bytecount_big);
 	pos = icon_dir->idEntries[big_icon_index].dwImageOffset;
 	f->seek(pos);
-	f->get_buffer((uint8_t *)&icon_buffer_big.write[0], bytecount_big);
-	icon_big = CreateIconFromResourceEx((PBYTE)&icon_buffer_big.write[0], bytecount_big, TRUE, 0x00030000, 0, 0, LR_DEFAULTSIZE);
-	ERR_FAIL_NULL_MSG(icon_big, "Could not create " + itos(big_icon_width) + "x" + itos(big_icon_width) + " @" + itos(big_icon_cc) + " icon, error: " + format_error_message(GetLastError()) + ".");
+	f->get_buffer((uint8_t *)&wd.icon_buffer_big.write[0], bytecount_big);
+	wd.icon_big = CreateIconFromResourceEx((PBYTE)&wd.icon_buffer_big.write[0], bytecount_big, TRUE, 0x00030000, 0, 0, LR_DEFAULTSIZE);
+	ERR_FAIL_NULL_MSG(wd.icon_big, "Could not create " + itos(big_icon_width) + "x" + itos(big_icon_width) + " @" + itos(big_icon_cc) + " icon, error: " + format_error_message(GetLastError()) + ".");
 
 	// Read the small icon.
 	DWORD bytecount_small = icon_dir->idEntries[small_icon_index].dwBytesInRes;
-	icon_buffer_small.resize(bytecount_small);
+	wd.icon_buffer_small.resize(bytecount_small);
 	pos = icon_dir->idEntries[small_icon_index].dwImageOffset;
 	f->seek(pos);
-	f->get_buffer((uint8_t *)&icon_buffer_small.write[0], bytecount_small);
-	icon_small = CreateIconFromResourceEx((PBYTE)&icon_buffer_small.write[0], bytecount_small, TRUE, 0x00030000, 0, 0, LR_DEFAULTSIZE);
-	ERR_FAIL_NULL_MSG(icon_small, "Could not create 16x16 @" + itos(small_icon_cc) + " icon, error: " + format_error_message(GetLastError()) + ".");
+	f->get_buffer((uint8_t *)&wd.icon_buffer_small.write[0], bytecount_small);
+	wd.icon_small = CreateIconFromResourceEx((PBYTE)&wd.icon_buffer_small.write[0], bytecount_small, TRUE, 0x00030000, 0, 0, LR_DEFAULTSIZE);
+	ERR_FAIL_NULL_MSG(wd.icon_small, "Could not create 16x16 @" + itos(small_icon_cc) + " icon, error: " + format_error_message(GetLastError()) + ".");
 
 	// Online tradition says to be sure last error is cleared and set the small icon first.
 	int err = 0;
 	SetLastError(err);
 
-	for (const KeyValue<DisplayServerEnums::WindowID, WindowData> &E : windows) {
-		SendMessage(E.value.hWnd, WM_SETICON, ICON_SMALL, (LPARAM)icon_small);
-		SendMessage(E.value.hWnd, WM_SETICON, ICON_BIG, (LPARAM)icon_big);
+	wd.icon_set = true;
+	SendMessage(wd.hWnd, WM_SETICON, ICON_SMALL, (LPARAM)wd.icon_small);
+	SendMessage(wd.hWnd, WM_SETICON, ICON_BIG, (LPARAM)wd.icon_big);
+	if (p_window == DisplayServerEnums::MAIN_WINDOW_ID) {
+		for (const KeyValue<DisplayServerEnums::WindowID, WindowData> &E : windows) {
+			if (!E.value.icon_set && E.key != DisplayServerEnums::MAIN_WINDOW_ID) {
+				SendMessage(E.value.hWnd, WM_SETICON, ICON_SMALL, (LPARAM)wd.icon_small);
+				SendMessage(E.value.hWnd, WM_SETICON, ICON_BIG, (LPARAM)wd.icon_big);
+			}
+		}
 	}
+
 	memdelete(icon_dir);
 }
 
 void DisplayServerWindows::set_icon(const Ref<Image> &p_icon) {
+	for (const KeyValue<DisplayServerEnums::WindowID, WindowData> &E : windows) {
+		if (E.value.icon_set && E.key != DisplayServerEnums::MAIN_WINDOW_ID) {
+			continue;
+		}
+		window_set_icon(p_icon, E.key);
+	}
+}
+
+void DisplayServerWindows::window_set_icon(const Ref<Image> &p_icon, DisplayServerEnums::WindowID p_window) {
 	_THREAD_SAFE_METHOD_
 
-	if (icon_big) {
-		DestroyIcon(icon_big);
-		icon_buffer_big.clear();
-		icon_big = nullptr;
+	ERR_FAIL_COND(!windows.has(p_window));
+	WindowData &wd = windows[p_window];
+
+	if (wd.icon_big) {
+		DestroyIcon(wd.icon_big);
+		wd.icon_buffer_big.clear();
+		wd.icon_big = nullptr;
 	}
-	if (icon_small) {
-		DestroyIcon(icon_small);
-		icon_buffer_small.clear();
-		icon_small = nullptr;
+	if (wd.icon_small) {
+		DestroyIcon(wd.icon_small);
+		wd.icon_buffer_small.clear();
+		wd.icon_small = nullptr;
 	}
 
 	if (p_icon.is_valid()) {
@@ -4321,8 +4390,8 @@ void DisplayServerWindows::set_icon(const Ref<Image> &p_icon) {
 
 		// Create temporary bitmap buffer.
 		int icon_len = 40 + h * w * 4;
-		icon_buffer_big.resize(icon_len);
-		BYTE *icon_bmp = icon_buffer_big.ptrw();
+		wd.icon_buffer_big.resize(icon_len);
+		BYTE *icon_bmp = wd.icon_buffer_big.ptrw();
 
 		encode_uint32(40, &icon_bmp[0]);
 		encode_uint32(w, &icon_bmp[4]);
@@ -4349,17 +4418,32 @@ void DisplayServerWindows::set_icon(const Ref<Image> &p_icon) {
 				wpx[3] = rpx[3];
 			}
 		}
-		icon_big = CreateIconFromResourceEx(icon_bmp, icon_len, TRUE, 0x00030000, 0, 0, LR_DEFAULTSIZE);
-		ERR_FAIL_NULL(icon_big);
+		wd.icon_big = CreateIconFromResourceEx(icon_bmp, icon_len, TRUE, 0x00030000, 0, 0, LR_DEFAULTSIZE);
+		ERR_FAIL_NULL(wd.icon_big);
 
-		for (const KeyValue<DisplayServerEnums::WindowID, WindowData> &E : windows) {
-			SendMessage(E.value.hWnd, WM_SETICON, ICON_SMALL, (LPARAM)icon_big);
-			SendMessage(E.value.hWnd, WM_SETICON, ICON_BIG, (LPARAM)icon_big);
+		wd.icon_set = true;
+		SendMessage(wd.hWnd, WM_SETICON, ICON_SMALL, (LPARAM)wd.icon_big);
+		SendMessage(wd.hWnd, WM_SETICON, ICON_BIG, (LPARAM)wd.icon_big);
+
+		if (p_window == DisplayServerEnums::MAIN_WINDOW_ID) {
+			for (const KeyValue<DisplayServerEnums::WindowID, WindowData> &E : windows) {
+				if (!E.value.icon_set && E.key != DisplayServerEnums::MAIN_WINDOW_ID) {
+					SendMessage(E.value.hWnd, WM_SETICON, ICON_SMALL, (LPARAM)wd.icon_big);
+					SendMessage(E.value.hWnd, WM_SETICON, ICON_BIG, (LPARAM)wd.icon_big);
+				}
+			}
 		}
 	} else {
-		for (const KeyValue<DisplayServerEnums::WindowID, WindowData> &E : windows) {
-			SendMessage(E.value.hWnd, WM_SETICON, ICON_SMALL, 0);
-			SendMessage(E.value.hWnd, WM_SETICON, ICON_BIG, 0);
+		wd.icon_set = false;
+		SendMessage(wd.hWnd, WM_SETICON, ICON_SMALL, 0);
+		SendMessage(wd.hWnd, WM_SETICON, ICON_BIG, 0);
+		if (p_window == DisplayServerEnums::MAIN_WINDOW_ID) {
+			for (const KeyValue<DisplayServerEnums::WindowID, WindowData> &E : windows) {
+				if (!E.value.icon_set && E.key != DisplayServerEnums::MAIN_WINDOW_ID) {
+					SendMessage(E.value.hWnd, WM_SETICON, ICON_SMALL, 0);
+					SendMessage(E.value.hWnd, WM_SETICON, ICON_BIG, 0);
+				}
+			}
 		}
 	}
 }
@@ -4585,9 +4669,11 @@ void DisplayServerWindows::window_set_vsync_mode(DisplayServerEnums::VSyncMode p
 	if (gl_manager_native) {
 		gl_manager_native->set_use_vsync(p_window, p_vsync_mode != DisplayServerEnums::VSYNC_DISABLED);
 	}
+#if defined(ANGLE_ENABLED)
 	if (gl_manager_angle) {
 		gl_manager_angle->set_use_vsync(p_vsync_mode != DisplayServerEnums::VSYNC_DISABLED);
 	}
+#endif
 #endif
 }
 
@@ -4603,9 +4689,11 @@ DisplayServerEnums::VSyncMode DisplayServerWindows::window_get_vsync_mode(Displa
 	if (gl_manager_native) {
 		return gl_manager_native->is_using_vsync(p_window) ? DisplayServerEnums::VSYNC_ENABLED : DisplayServerEnums::VSYNC_DISABLED;
 	}
+#ifdef ANGLE_ENABLED
 	if (gl_manager_angle) {
 		return gl_manager_angle->is_using_vsync() ? DisplayServerEnums::VSYNC_ENABLED : DisplayServerEnums::VSYNC_DISABLED;
 	}
+#endif
 #endif
 	return DisplayServerEnums::VSYNC_ENABLED;
 }
@@ -6319,9 +6407,11 @@ LRESULT DisplayServerWindows::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 				if (window.create_completed && gl_manager_native && window.gl_native_window_created) {
 					gl_manager_native->window_resize(window_id, window.width + off.x, window.height + off.y);
 				}
+#if defined(ANGLE_ENABLED)
 				if (window.create_completed && gl_manager_angle && window.gl_angle_window_created) {
 					gl_manager_angle->window_resize(window_id, window.width + off.x, window.height + off.y);
 				}
+#endif
 #endif
 			}
 
@@ -6945,9 +7035,14 @@ Error DisplayServerWindows::_create_window(DisplayServerEnums::WindowID p_window
 		}
 
 		wd.exclusive = p_exclusive;
+		bool on_top = (p_flags & DisplayServerEnums::WINDOW_FLAG_ALWAYS_ON_TOP_BIT && p_mode != DisplayServerEnums::WINDOW_MODE_FULLSCREEN && p_mode != DisplayServerEnums::WINDOW_MODE_EXCLUSIVE_FULLSCREEN);
 		if (wd_transient_parent) {
-			wd.transient_parent = p_transient_parent;
-			wd_transient_parent->transient_children.insert(id);
+			if (on_top) {
+				ERR_PRINT("Windows with the 'on top' can't become transient.");
+			} else {
+				wd.transient_parent = p_transient_parent;
+				wd_transient_parent->transient_children.insert(id);
+			}
 		}
 
 		wd.sharp_corners = p_flags & DisplayServerEnums::WINDOW_FLAG_SHARP_CORNERS_BIT;
@@ -7089,6 +7184,17 @@ void DisplayServerWindows::_destroy_window(DisplayServerEnums::WindowID p_window
 		wd.drop_target->Release();
 	}
 
+	if (wd.icon_big) {
+		DestroyIcon(wd.icon_big);
+		wd.icon_buffer_big.clear();
+		wd.icon_big = nullptr;
+	}
+	if (wd.icon_small) {
+		DestroyIcon(wd.icon_small);
+		wd.icon_buffer_small.clear();
+		wd.icon_small = nullptr;
+	}
+
 	DestroyWindow(wd.hWnd);
 	windows.erase(p_window_id);
 }
@@ -7150,7 +7256,7 @@ Error DisplayServerWindows::_create_gl_window(DisplayServerEnums::WindowID p_win
 
 		wd.gl_native_window_created = true;
 	}
-
+#ifdef ANGLE_ENABLED
 	if (gl_manager_angle) {
 		WindowData &wd = windows[p_window_id];
 
@@ -7159,6 +7265,7 @@ Error DisplayServerWindows::_create_gl_window(DisplayServerEnums::WindowID p_win
 
 		wd.gl_angle_window_created = true;
 	}
+#endif
 
 	return OK;
 }
@@ -7433,11 +7540,15 @@ DisplayServerWindows::DisplayServerWindows(const String &p_rendering_driver, Dis
 	os_ver.dwOSVersionInfoSize = sizeof(OSVERSIONINFOW);
 
 	HMODULE nt_lib = LoadLibraryW(L"ntdll.dll");
+#if defined(ANGLE_ENABLED)
 	bool is_wine = false;
+#endif
 	if (nt_lib) {
 		WineGetVersionPtr wine_get_version = (WineGetVersionPtr)(void *)GetProcAddress(nt_lib, "wine_get_version"); // Do not read Windows build number under Wine, it can be set to arbitrary value.
 		if (wine_get_version) {
+#if defined(ANGLE_ENABLED)
 			is_wine = true;
+#endif
 		} else {
 			RtlGetVersionPtr RtlGetVersion = (RtlGetVersionPtr)(void *)GetProcAddress(nt_lib, "RtlGetVersion");
 			if (RtlGetVersion) {
@@ -7626,7 +7737,7 @@ DisplayServerWindows::DisplayServerWindows(const String &p_rendering_driver, Dis
 		window_position = scr_rect.position + (scr_rect.size - p_resolution) / 2;
 	}
 
-	HWND parent_hwnd = NULL;
+	HWND parent_hwnd = nullptr;
 	if (p_parent_window) {
 		// Parented window.
 		parent_hwnd = (HWND)p_parent_window;
@@ -7759,15 +7870,21 @@ DisplayServerWindows::DisplayServerWindows(const String &p_rendering_driver, Dis
 #endif
 
 #if defined(GLES3_ENABLED)
-
+#if defined(ANGLE_ENABLED)
 	bool fallback = GLOBAL_GET("rendering/gl_compatibility/fallback_to_angle");
 	bool show_warning = true;
+#endif
 
 	if (rendering_driver == "opengl3") {
 		// There's no native OpenGL drivers on Windows for ARM, always enable fallback.
 #if defined(__arm__) || defined(__aarch64__) || defined(_M_ARM) || defined(_M_ARM64)
+#if defined(ANGLE_ENABLED)
 		fallback = true;
 		show_warning = false;
+#else
+		r_error = ERR_UNAVAILABLE;
+		ERR_FAIL_MSG("Could not initialize OpenGL.");
+#endif
 #else
 		typedef BOOL(WINAPI * IsWow64Process2Ptr)(HANDLE, USHORT *, USHORT *);
 
@@ -7779,13 +7896,19 @@ DisplayServerWindows::DisplayServerWindows(const String &p_rendering_driver, Dis
 				machine_arch = 0;
 			}
 			if (machine_arch == 0xAA64) {
+#if defined(ANGLE_ENABLED)
 				fallback = true;
 				show_warning = false;
+#else
+				r_error = ERR_UNAVAILABLE;
+				ERR_FAIL_MSG("Could not initialize OpenGL.");
+#endif
 			}
 		}
 #endif
 	}
 
+#if defined(ANGLE_ENABLED)
 	bool gl_supported = true;
 	if (fallback && !is_wine && (rendering_driver == "opengl3")) {
 		Dictionary gl_info = detect_wgl();
@@ -7841,11 +7964,7 @@ DisplayServerWindows::DisplayServerWindows(const String &p_rendering_driver, Dis
 			gl_manager_angle = nullptr;
 			bool fallback_to_native = GLOBAL_GET("rendering/gl_compatibility/fallback_to_native");
 			if (fallback_to_native && gl_supported) {
-#ifdef EGL_STATIC
 				WARN_PRINT("Your video card drivers seem not to support GLES3 / ANGLE, switching to native OpenGL.");
-#else
-				WARN_PRINT("Your video card drivers seem not to support GLES3 / ANGLE or ANGLE dynamic libraries (libEGL.dll and libGLESv2.dll) are missing, switching to native OpenGL.");
-#endif
 				rendering_driver = "opengl3";
 			} else {
 				r_error = ERR_UNAVAILABLE;
@@ -7853,6 +7972,7 @@ DisplayServerWindows::DisplayServerWindows(const String &p_rendering_driver, Dis
 			}
 		}
 	}
+#endif // ANGLE_ENABLED
 	if (rendering_driver == "opengl3") {
 		gl_manager_native = memnew(GLManagerNative_Windows);
 		tested_drivers.set_flag(DRIVER_ID_COMPAT_OPENGL3);
@@ -7904,6 +8024,7 @@ DisplayServerWindows::DisplayServerWindows(const String &p_rendering_driver, Dis
 		}
 		RasterizerGLES3::make_current(true);
 	}
+#ifdef ANGLE_ENABLED
 	if (rendering_driver == "opengl3_angle") {
 		if (_create_gl_window(DisplayServerEnums::MAIN_WINDOW_ID) != OK) {
 			memdelete(gl_manager_angle);
@@ -7914,6 +8035,7 @@ DisplayServerWindows::DisplayServerWindows(const String &p_rendering_driver, Dis
 		}
 		RasterizerGLES3::make_current(false);
 	}
+#endif
 #endif
 
 	window_set_vsync_mode(p_vsync_mode, DisplayServerEnums::MAIN_WINDOW_ID);
@@ -8003,7 +8125,9 @@ Vector<String> DisplayServerWindows::get_rendering_drivers_func() {
 #endif
 #ifdef GLES3_ENABLED
 	drivers.push_back("opengl3");
+#ifdef ANGLE_ENABLED
 	drivers.push_back("opengl3_angle");
+#endif
 #endif
 	drivers.push_back("dummy");
 
@@ -8145,25 +8269,16 @@ DisplayServerWindows::~DisplayServerWindows() {
 	}
 #endif
 
-	if (icon_big) {
-		DestroyIcon(icon_big);
-		icon_buffer_big.clear();
-		icon_big = nullptr;
-	}
-	if (icon_small) {
-		DestroyIcon(icon_small);
-		icon_buffer_small.clear();
-		icon_small = nullptr;
-	}
-
 	if (restore_mouse_trails > 1) {
 		SystemParametersInfoA(SPI_SETMOUSETRAILS, restore_mouse_trails, nullptr, 0);
 	}
 #ifdef GLES3_ENABLED
+#ifdef ANGLE_ENABLED
 	if (gl_manager_angle) {
 		memdelete(gl_manager_angle);
 		gl_manager_angle = nullptr;
 	}
+#endif
 	if (gl_manager_native) {
 		memdelete(gl_manager_native);
 		gl_manager_native = nullptr;

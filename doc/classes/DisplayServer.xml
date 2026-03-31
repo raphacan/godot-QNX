@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="DisplayServer" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+<class name="DisplayServer" inherits="Object" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
 	<brief_description>
 		A server interface for low-level window management.
 	</brief_description>
@@ -1604,6 +1604,14 @@
 				[b]Note:[/b] This method is implemented on Android, iOS, macOS, Windows, and Linux (X11/Wayland).
 			</description>
 		</method>
+		<method name="is_in_pip_mode">
+			<return type="bool" />
+			<param index="0" name="window_id" type="int" default="0" />
+			<description>
+				Returns [code]true[/code] if the application is in picture-in-picture mode.
+				[b]Note:[/b] This method is implemented on Android.
+			</description>
+		</method>
 		<method name="is_touchscreen_available" qualifiers="const">
 			<return type="bool" />
 			<description>
@@ -1693,6 +1701,33 @@
 			<param index="0" name="mouse_mode" type="int" enum="DisplayServer.MouseMode" />
 			<description>
 				Sets the current mouse mode. See also [method mouse_get_mode].
+			</description>
+		</method>
+		<method name="pip_mode_enter">
+			<return type="void" />
+			<param index="0" name="window_id" type="int" default="0" />
+			<description>
+				Enters picture-in-picture mode.
+				[b]Note:[/b] This method is implemented on Android.
+			</description>
+		</method>
+		<method name="pip_mode_set_aspect_ratio">
+			<return type="void" />
+			<param index="0" name="numerator" type="int" />
+			<param index="1" name="denominator" type="int" />
+			<param index="2" name="window_id" type="int" default="0" />
+			<description>
+				Specifies the aspect ratio for picture-in-picture mode.
+				[b]Note:[/b] This method is implemented on Android.
+			</description>
+		</method>
+		<method name="pip_mode_set_auto_enter_on_background">
+			<return type="void" />
+			<param index="0" name="auto_enter_on_background" type="bool" />
+			<param index="1" name="window_id" type="int" default="0" />
+			<description>
+				Specifies whether picture-in-picture mode should be entered automatically when the application goes in the background.
+				[b]Note:[/b] This method is implemented on Android.
 			</description>
 		</method>
 		<method name="process_events">
@@ -1869,7 +1904,7 @@
 			<return type="void" />
 			<param index="0" name="image" type="Image" />
 			<description>
-				Sets the window icon (usually displayed in the top-left corner) with an [Image]. To use icons in the operating system's native format, use [method set_native_icon] instead.
+				Sets the application icon and icons of all windows with an [Image]. To use icons in the operating system's native format, use [method set_native_icon] instead.
 				[b]Note:[/b] Requires support for [constant FEATURE_ICON].
 			</description>
 		</method>
@@ -2406,6 +2441,15 @@
 				Sets the reference white luminance in nits (cd/m²) for HDR output by the window specified by [param window_id]. If [param reference_luminance] is negative, the window automatically adjusts to the brightness set by the operating system. By default, this luminance is set to [code]-1.0[/code] for every window. Typically this property should be left at this default value, but may optionally be exposed as an "HDR Brightness" in-game setting to allow the player to adjust the brightness of their game, independently of their device settings. See also [method window_get_hdr_output_current_reference_luminance] and [method window_get_hdr_output_reference_luminance].
 			</description>
 		</method>
+		<method name="window_set_icon">
+			<return type="void" />
+			<param index="0" name="icon" type="Image" />
+			<param index="1" name="window_id" type="int" default="0" />
+			<description>
+				Sets the window icon (usually displayed in the top-left corner) for the window specified by [param window_id].
+				[b]Note:[/b] This method is implemented on Linux and Windows.
+			</description>
+		</method>
 		<method name="window_set_ime_active">
 			<return type="void" />
 			<param index="0" name="active" type="bool" />
@@ -2751,7 +2795,10 @@
 			Display server supports interaction with screen reader or Braille display. [b]Linux (X11/Wayland), macOS, Windows[/b]
 		</constant>
 		<constant name="FEATURE_HDR_OUTPUT" value="35" enum="Feature">
-			Display server supports HDR output. [b]macOS, iOS, visionOS, Windows[/b]
+			Display server supports HDR output. [b]Linux (Wayland), macOS, iOS, visionOS, Windows[/b]
+		</constant>
+		<constant name="FEATURE_PIP_MODE" value="36" enum="Feature">
+			Display server supports putting the application in picture-in-picture mode. [b]Android[/b]
 		</constant>
 		<constant name="ROLE_UNKNOWN" value="0" enum="AccessibilityRole" deprecated="Use [AccessibilityServer] instead.">
 			Unknown or custom role.

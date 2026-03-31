@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="Tween" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+<class name="Tween" inherits="RefCounted" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
 	<brief_description>
 		Lightweight object used for general-purpose animation via script, using [Tweener]s.
 	</brief_description>
@@ -142,6 +142,12 @@
 			<description>
 				Returns the total time in seconds the [Tween] has been animating (i.e. the time since it started, not counting pauses etc.). The time is affected by [method set_speed_scale], and [method stop] will reset it to [code]0[/code].
 				[b]Note:[/b] As it results from accumulating frame deltas, the time returned after the [Tween] has finished animating will be slightly greater than the actual [Tween] duration.
+			</description>
+		</method>
+		<method name="has_tweeners" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if any [Tweener] has been added to the [Tween] and the [Tween] is valid. Useful when tweeners are added dynamically and the tween can end up empty. Killing an empty tween before it starts will prevent errors.
 			</description>
 		</method>
 		<method name="interpolate_value" qualifiers="static">

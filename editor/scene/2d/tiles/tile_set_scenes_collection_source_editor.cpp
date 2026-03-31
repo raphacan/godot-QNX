@@ -30,6 +30,7 @@
 
 #include "tile_set_scenes_collection_source_editor.h"
 
+#include "core/io/resource_loader.h"
 #include "core/object/callable_mp.h"
 #include "core/object/class_db.h"
 #include "editor/editor_node.h"
@@ -40,7 +41,6 @@
 #include "editor/scene/2d/tiles/tile_set_editor.h"
 #include "editor/settings/editor_settings.h"
 #include "editor/themes/editor_scale.h"
-
 #include "scene/gui/button.h"
 #include "scene/gui/item_list.h"
 #include "scene/gui/label.h"

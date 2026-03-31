@@ -219,11 +219,12 @@ class GridMapEditor : public EditorDock {
 	ItemList *mesh_library_palette = nullptr;
 	Label *info_message = nullptr;
 
-	void update_grid(); // Change which and where the grid is displayed
+	void update_grid(); // Change which and where the grid is displayed.
 	void _draw_grids(const Vector3 &cell_size);
 	void _configure();
 	void _menu_option(int);
 	void update_palette();
+	void _update_resource_preview(const String &p_path, const Ref<Texture2D> &p_preview, const Ref<Texture2D> &p_small_preview, int p_idx);
 	void _update_mesh_library();
 	void _set_display_mode(int p_mode);
 	void _item_selected_cbk(int idx);
@@ -292,7 +293,6 @@ public:
 	virtual void forward_3d_draw_over_viewport(Control *p_overlay) override;
 	virtual EditorPlugin::AfterGUIInput forward_3d_gui_input(Camera3D *p_camera, const Ref<InputEvent> &p_event) override { return grid_map_editor->forward_spatial_input_event(p_camera, p_event); }
 	virtual String get_plugin_name() const override { return "GridMap"; }
-	bool has_main_screen() const override { return false; }
 	virtual void edit(Object *p_object) override;
 	virtual bool handles(Object *p_object) const override;
 	virtual void make_visible(bool p_visible) override;

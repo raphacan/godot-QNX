@@ -270,18 +270,26 @@ Size2 PopupMenu::_get_contents_minimum_size() const {
 		minsize.height += _get_item_height(i) + theme_cache.v_separation;
 	}
 
-	minsize.width += theme_cache.item_start_padding + body_max_w + accel_max_w + theme_cache.item_end_padding;
+	body_max_w = theme_cache.item_start_padding + body_max_w + accel_max_w + theme_cache.item_end_padding;
 
 	const int check_w = MAX(theme_cache.checked->get_width(), theme_cache.radio_checked->get_width());
 	if (gutter_compact) {
-		minsize.width += MAX(icon_max_w, check_w) + theme_cache.h_separation;
+		body_max_w += MAX(icon_max_w, check_w) + theme_cache.h_separation;
 	} else {
 		if (icon_max_w > 0) {
-			minsize.width += icon_max_w + theme_cache.h_separation;
+			body_max_w += icon_max_w + theme_cache.h_separation;
 		}
 		if (has_check_gutter) {
-			minsize.width += check_w + theme_cache.h_separation;
+			body_max_w += check_w + theme_cache.h_separation;
 		}
+	}
+
+	if (is_search_bar_enabled()) {
+		Size2 sb_min_size = search_bar->get_minimum_size();
+		minsize.width += MAX(body_max_w, sb_min_size.width);
+		minsize.height += sb_min_size.height + theme_cache.search_bar_separation;
+	} else {
+		minsize.width += body_max_w;
 	}
 
 	if (is_inside_tree()) {
@@ -1295,6 +1303,14 @@ RID PopupMenu::get_focused_accessibility_element() const {
 	}
 }
 
+String PopupMenu::_get_accessibility_name() const {
+	if (has_meta("_menu_name")) {
+		return get_meta("_menu_name", get_name());
+	} else {
+		return Window::_get_accessibility_name();
+	}
+}
+
 void PopupMenu::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_EXIT_TREE: {
@@ -1315,9 +1331,6 @@ void PopupMenu::_notification(int p_what) {
 			RID ae = get_accessibility_element();
 			ERR_FAIL_COND(ae.is_null());
 
-			if (has_meta("_menu_name")) {
-				AccessibilityServer::get_singleton()->update_set_name(ae, get_meta("_menu_name", get_name()));
-			}
 			AccessibilityServer::get_singleton()->update_set_role(ae, AccessibilityServerEnums::AccessibilityRole::ROLE_MENU);
 			AccessibilityServer::get_singleton()->update_set_list_item_count(ae, items.size());
 
@@ -1400,6 +1413,7 @@ void PopupMenu::_notification(int p_what) {
 		case Control::NOTIFICATION_LAYOUT_DIRECTION_CHANGED:
 		case NOTIFICATION_THEME_CHANGED: {
 			search_bar->set_right_icon(get_theme_icon(SNAME("search")));
+			vbox_container->add_theme_constant_override(SNAME("separation"), theme_cache.search_bar_separation);
 
 			panel->add_theme_style_override(SceneStringName(panel), theme_cache.panel_style);
 
@@ -3426,6 +3440,7 @@ void PopupMenu::_bind_methods() {
 
 	BIND_THEME_ITEM(Theme::DATA_TYPE_CONSTANT, PopupMenu, v_separation);
 	BIND_THEME_ITEM(Theme::DATA_TYPE_CONSTANT, PopupMenu, h_separation);
+	BIND_THEME_ITEM(Theme::DATA_TYPE_CONSTANT, PopupMenu, search_bar_separation);
 	BIND_THEME_ITEM(Theme::DATA_TYPE_CONSTANT, PopupMenu, indent);
 	BIND_THEME_ITEM(Theme::DATA_TYPE_CONSTANT, PopupMenu, item_start_padding);
 	BIND_THEME_ITEM(Theme::DATA_TYPE_CONSTANT, PopupMenu, item_end_padding);
@@ -3472,7 +3487,7 @@ void PopupMenu::_bind_methods() {
 	base_property_helper.register_property(PropertyInfo(Variant::INT, "id", PROPERTY_HINT_RANGE, "0,10,1,or_greater", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_STORE_IF_NULL), defaults.id, &PopupMenu::set_item_id, &PopupMenu::get_item_id);
 	base_property_helper.register_property(PropertyInfo(Variant::BOOL, "disabled"), defaults.disabled, &PopupMenu::set_item_disabled, &PopupMenu::is_item_disabled);
 	base_property_helper.register_property(PropertyInfo(Variant::BOOL, "separator"), defaults.separator, &PopupMenu::set_item_as_separator, &PopupMenu::is_item_separator);
-	PropertyListHelper::register_base_helper(&base_property_helper);
+	PropertyListHelper::register_base_helper(get_class_static(), &base_property_helper);
 }
 
 void PopupMenu::_native_popup(const Rect2i &p_rect) {
@@ -3636,6 +3651,9 @@ void PopupMenu::set_visible(bool p_visible) {
 
 PopupMenu::PopupMenu() {
 	set_flag(FLAG_TRANSPARENT, true);
+	set_default_canvas_item_texture_filter(Viewport::DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_PARENT_NODE);
+	set_default_canvas_item_texture_repeat(Viewport::DEFAULT_CANVAS_ITEM_TEXTURE_REPEAT_PARENT_NODE);
+
 	// The panel used to draw the panel style.
 	panel = memnew(PanelContainer);
 	panel->set_anchors_and_offsets_preset(Control::PRESET_FULL_RECT);

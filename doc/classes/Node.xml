@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="Node" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+<class name="Node" inherits="Object" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
 	<brief_description>
 		Base class for all scene objects.
 	</brief_description>
@@ -1322,6 +1322,12 @@
 		</constant>
 		<constant name="NOTIFICATION_TEXT_SERVER_CHANGED" value="2018">
 			Notification received when the [TextServer] is changed.
+		</constant>
+		<constant name="NOTIFICATION_APPLICATION_PIP_MODE_ENTERED" value="2019">
+			Notification received when the application enters picture-in-picture mode.
+		</constant>
+		<constant name="NOTIFICATION_APPLICATION_PIP_MODE_EXITED" value="2020">
+			Notification received when the application exits picture-in-picture mode.
 		</constant>
 		<constant name="NOTIFICATION_ACCESSIBILITY_UPDATE" value="3000">
 			Notification received when an accessibility information update is required.
