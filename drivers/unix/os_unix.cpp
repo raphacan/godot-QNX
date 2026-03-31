@@ -50,7 +50,7 @@
 #include <sys/sysctl.h>
 #endif
 
-#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
+#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(__QNX__)
 #include <sys/param.h>
 #include <sys/sysctl.h>
 #endif
@@ -1201,6 +1201,20 @@ String OS_Unix::get_executable_path() const {
 	delete[] resolved_path;
 
 	return path;
+#elif defined(__QNX__)
+	char buf[MAXPATHLEN];
+	int fd = open("/proc/self/exefile", O_RDONLY);
+	ssize_t len = read(fd, buf, sizeof(buf));
+	String b;
+	if (len > 0) {
+		b.append_utf8(buf, len);
+	}
+	close(fd);
+	if (b.is_empty()) {
+		WARN_PRINT("Couldn't get executable path from /proc/self/exe, using argv[0]");
+		return OS::get_executable_path();
+	}
+	return b;
 #else
 	ERR_PRINT("Warning, don't know how to obtain executable path on this OS! Please override this function properly.");
 	return OS::get_executable_path();

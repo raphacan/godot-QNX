@@ -40,7 +40,7 @@
 
 #include "platform_gl.h"
 
-#ifdef ANDROID_ENABLED
+#if defined(ANDROID_ENABLED) || defined(QNX_ENABLED)
 typedef void (*PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVRPROC)(GLenum, GLenum, GLuint, GLint, GLint, GLsizei);
 typedef void (*PFNGLTEXSTORAGE3DMULTISAMPLEPROC)(GLenum, GLsizei, GLenum, GLsizei, GLsizei, GLsizei, GLboolean);
 typedef void (*PFNGLFRAMEBUFFERTEXTURE2DMULTISAMPLEEXTPROC)(GLenum, GLenum, GLenum, GLuint, GLint, GLsizei);
@@ -112,7 +112,7 @@ public:
 	// ANGLE shader workaround.
 	bool polyfill_half2float = true;
 
-#ifdef ANDROID_ENABLED
+#if defined(ANDROID_ENABLED) || defined(QNX_ENABLED)
 	PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVRPROC eglFramebufferTextureMultiviewOVR = nullptr;
 	PFNGLTEXSTORAGE3DMULTISAMPLEPROC eglTexStorage3DMultisample = nullptr;
 	PFNGLFRAMEBUFFERTEXTURE2DMULTISAMPLEEXTPROC eglFramebufferTexture2DMultisampleEXT = nullptr;
@@ -124,7 +124,7 @@ public:
 #define glFramebufferTexture2DMultisampleEXT GLES3::Config::get_singleton()->eglFramebufferTexture2DMultisampleEXT
 #define glFramebufferTextureMultisampleMultiviewOVR GLES3::Config::get_singleton()->eglFramebufferTextureMultisampleMultiviewOVR
 #define glEGLImageTargetTexture2DOES GLES3::Config::get_singleton()->eglEGLImageTargetTexture2DOES
-#endif // ANDROID_ENABLED
+#endif // ANDROID_ENABLED || QNX_ENABLED
 
 	static Config *get_singleton() { return singleton; }
 
