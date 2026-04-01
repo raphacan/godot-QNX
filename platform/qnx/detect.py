@@ -37,6 +37,22 @@ def can_build():
 def get_opts():
     from SCons.Variables import BoolVariable, EnumVariable
 
+    # Dependencies folder.
+    deps_folder = os.getenv("LOCALAPPDATA")
+    if deps_folder:
+        deps_folder = os.path.join(deps_folder, "Godot", "build_deps")
+    else:
+        # Cross-compiling, the deps install script puts things in `bin`.
+        # Getting an absolute path to it is a bit hacky in Python.
+        try:
+            import inspect
+
+            caller_frame = inspect.stack()[1]
+            caller_script_dir = os.path.dirname(os.path.abspath(caller_frame[1]))
+            deps_folder = os.path.join(caller_script_dir, "bin", "build_deps")
+        except Exception:  # Give up.
+            deps_folder = ""
+
     return [
         EnumVariable("linker", "Linker program", "default", ["default", "bfd", "gold", "lld", "mold"], ignorecase=2),
         BoolVariable("use_llvm", "Use the LLVM compiler", False),
@@ -59,6 +75,12 @@ def get_opts():
         BoolVariable("libdecor", "Enable libdecor support", False),
         BoolVariable("touch", "Enable touch events", False),
         BoolVariable("execinfo", "Use libexecinfo on systems where glibc is not available", False),
+        # Screen reader support.
+        (
+            "accesskit_sdk_path",
+            "Path to the AccessKit C SDK",
+            os.path.join(deps_folder, "accesskit"),
+        ),
     ]
 
 
@@ -152,7 +174,6 @@ def configure(env: "SConsEnvironment"):
 
     if env["use_ubsan"] or env["use_asan"] or env["use_lsan"] or env["use_tsan"] or env["use_msan"]:
         env.extra_suffix += ".san"
-        env.Append(CPPDEFINES=["SANITIZERS_ENABLED"])
 
         if env["use_ubsan"]:
             env.Append(CPPDEFINES=["UBSAN_ENABLED"])
@@ -260,6 +281,9 @@ def configure(env: "SConsEnvironment"):
 
     if not env["builtin_enet"]:
         env.ParseConfig("pkg-config libenet --cflags --libs")
+        print_warning(
+            "System-provided ENet has its functionality limited to IPv4 only and no DTLS support, unless patched for Godot."
+        )
 
     if not env["builtin_zstd"]:
         env.ParseConfig("pkg-config libzstd --cflags --libs")
@@ -273,20 +297,29 @@ def configure(env: "SConsEnvironment"):
     if not env["builtin_libtheora"]:
         env["builtin_libogg"] = False  # Needed to link against system libtheora
         env["builtin_libvorbis"] = False  # Needed to link against system libtheora
-        env.ParseConfig("pkg-config theora theoradec --cflags --libs")
+        if env.editor_build:
+            env.ParseConfig("pkg-config theora theoradec theoraenc --cflags --libs")
+        else:
+            env.ParseConfig("pkg-config theora theoradec --cflags --libs")
     else:
         if env["arch"] in ["x86_64", "x86_32"]:
             env["x86_libtheora_opt_gcc"] = True
 
     if not env["builtin_libvorbis"]:
         env["builtin_libogg"] = False  # Needed to link against system libvorbis
-        env.ParseConfig("pkg-config vorbis vorbisfile --cflags --libs")
+        if env.editor_build:
+            env.ParseConfig("pkg-config vorbis vorbisfile vorbisenc --cflags --libs")
+        else:
+            env.ParseConfig("pkg-config vorbis vorbisfile --cflags --libs")
 
     if not env["builtin_libogg"]:
         env.ParseConfig("pkg-config ogg --cflags --libs")
 
     if not env["builtin_libwebp"]:
         env.ParseConfig("pkg-config libwebp --cflags --libs")
+
+    if not env["builtin_libjpeg_turbo"]:
+        env.ParseConfig("pkg-config libturbojpeg --cflags --libs")
 
     if not env["builtin_mbedtls"]:
         # mbedTLS only provides a pkgconfig file since 3.6.0, but we still support 2.28.x,
@@ -349,17 +382,6 @@ def configure(env: "SConsEnvironment"):
                 env["pulseaudio"] = False
         else:
             env.Append(CPPDEFINES=["PULSEAUDIO_ENABLED", "_REENTRANT"])
-
-    if env["dbus"]:
-        if not env["use_sowrap"]:
-            if os.system("pkg-config --exists dbus-1") == 0:  # 0 means found
-                env.ParseConfig("pkg-config dbus-1 --cflags --libs")
-                env.Append(CPPDEFINES=["DBUS_ENABLED"])
-            else:
-                print_warning("D-Bus development libraries not found. Disabling screensaver prevention.")
-                env["dbus"] = False
-        else:
-            env.Append(CPPDEFINES=["DBUS_ENABLED"])
 
     if env["speechd"]:
         if not env["use_sowrap"]:
@@ -459,23 +481,30 @@ def configure(env: "SConsEnvironment"):
         env.Append(CPPDEFINES=["WAYLAND_ENABLED"])
         env.Append(LIBS=["rt"])  # Needed by glibc, used by _allocate_shm_file
 
-    # if env["accesskit"]:
-    #     if env["accesskit_sdk_path"] != "":
-    #         env.Prepend(CPPPATH=[env["accesskit_sdk_path"] + "/include"])
-    #         if env["arch"] == "arm64":
-    #             env.Append(LIBPATH=[env["accesskit_sdk_path"] + "/lib/linux/arm64/static/"])
-    #         elif env["arch"] == "arm32":
-    #             env.Append(LIBPATH=[env["accesskit_sdk_path"] + "/lib/linux/arm32/static/"])
-    #         elif env["arch"] == "rv64":
-    #             env.Append(LIBPATH=[env["accesskit_sdk_path"] + "/lib/linux/riscv64gc/static/"])
-    #         elif env["arch"] == "x86_64":
-    #             env.Append(LIBPATH=[env["accesskit_sdk_path"] + "/lib/linux/x86_64/static/"])
-    #         elif env["arch"] == "x86_32":
-    #             env.Append(LIBPATH=[env["accesskit_sdk_path"] + "/lib/linux/x86/static/"])
-    #         env.Append(LIBS=["accesskit"])
-    #     else:
-    #         env.Append(CPPDEFINES=["ACCESSKIT_DYNAMIC"])
-    #     env.Append(CPPDEFINES=["ACCESSKIT_ENABLED"])
+    if env["accesskit"]:
+        if os.path.exists(env["accesskit_sdk_path"]):
+            env.Prepend(CPPPATH=[env["accesskit_sdk_path"] + "/include"])
+            if env["arch"] == "arm64":
+                env.Append(LIBPATH=[env["accesskit_sdk_path"] + "/lib/linux/arm64/static/"])
+            elif env["arch"] == "arm32":
+                env.Append(LIBPATH=[env["accesskit_sdk_path"] + "/lib/linux/arm32/static/"])
+            elif env["arch"] == "rv64":
+                env.Append(LIBPATH=[env["accesskit_sdk_path"] + "/lib/linux/riscv64gc/static/"])
+            elif env["arch"] == "x86_64":
+                env.Append(LIBPATH=[env["accesskit_sdk_path"] + "/lib/linux/x86_64/static/"])
+            elif env["arch"] == "x86_32":
+                env.Append(LIBPATH=[env["accesskit_sdk_path"] + "/lib/linux/x86/static/"])
+            env.Append(LIBS=["accesskit"])
+            env.Append(CPPDEFINES=["ACCESSKIT_ENABLED"])
+        else:
+            print_warning(
+                "The screen reader support driver requires dependencies to be installed.\n"
+                f"You can install them by running `python {os.path.join('misc', 'scripts', 'install_accesskit.py')}`.\n"
+                "See the documentation for more information:\n"
+                "\thttps://docs.godotengine.org/en/latest/engine_details/development/compiling/compiling_for_linuxbsd.html\n"
+                "Alternatively, disable this driver by compiling with `accesskit=no` explicitly."
+            )
+            env["accesskit"] = False
 
     if env["vulkan"]:
         env.Append(CPPDEFINES=["VULKAN_ENABLED", "RD_ENABLED"])
