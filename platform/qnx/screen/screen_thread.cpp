@@ -30,10 +30,11 @@
 
 #include "screen_thread.h"
 
+#include "key_mapping_qnx_screen.h"
+
 #include "core/input/input.h"
 #include "core/os/os.h"
 
-#include "key_mapping_qnx_screen.h"
 #include <sys/keycodes.h>
 
 Error QnxScreenThread::init(screen_context_t p_screen_context) {

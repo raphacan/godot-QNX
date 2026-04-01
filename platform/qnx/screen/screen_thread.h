@@ -30,12 +30,12 @@
 
 #pragma once
 
-#include <screen/screen.h>
-
 #include "core/input/input_event.h"
 #include "core/os/thread.h"
 #include "core/templates/local_vector.h"
 #include "servers/display/display_server_enums.h"
+
+#include <screen/screen.h>
 
 class QnxScreenThread {
 public:
