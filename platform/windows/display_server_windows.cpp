@@ -36,6 +36,7 @@
 #include "os_windows.h"
 #include "tts_windows.h"
 #include "wgl_detect_version.h"
+#include "winrt_utils.h"
 
 #include "core/config/engine.h"
 #include "core/config/project_settings.h"
@@ -3406,7 +3407,7 @@ HWND DisplayServerWindows::_find_window_from_process_id(ProcessID p_pid, HWND p_
 }
 
 // Get screen HDR capabilities for internal use only.
-DisplayServerWindows::ScreenHdrData DisplayServerWindows::_get_screen_hdr_data(int p_screen) const {
+DisplayServerWindows::ScreenHdrData DisplayServerWindows::_get_screen_hdr_data(int p_screen, bool p_include_sdr_white_level) const {
 	ScreenHdrData data;
 	HMONITOR monitor = _get_hmonitor_of_screen(p_screen);
 	if (!monitor) {
@@ -3429,17 +3430,19 @@ DisplayServerWindows::ScreenHdrData DisplayServerWindows::_get_screen_hdr_data(i
 	}
 #endif // D3D12_ENABLED
 
-	uint32_t path_count = 0;
-	uint32_t mode_count = 0;
+	if (p_include_sdr_white_level) {
+		uint32_t path_count = 0;
+		uint32_t mode_count = 0;
 
-	if (GetDisplayConfigBufferSizes(QDC_ONLY_ACTIVE_PATHS, &path_count, &mode_count) == ERROR_SUCCESS) {
-		LocalVector<DISPLAYCONFIG_PATH_INFO> paths;
-		LocalVector<DISPLAYCONFIG_MODE_INFO> modes;
-		paths.resize(path_count);
-		modes.resize(mode_count);
+		if (GetDisplayConfigBufferSizes(QDC_ONLY_ACTIVE_PATHS, &path_count, &mode_count) == ERROR_SUCCESS) {
+			LocalVector<DISPLAYCONFIG_PATH_INFO> paths;
+			LocalVector<DISPLAYCONFIG_MODE_INFO> modes;
+			paths.resize(path_count);
+			modes.resize(mode_count);
 
-		if (QueryDisplayConfig(QDC_ONLY_ACTIVE_PATHS, &path_count, paths.ptr(), &mode_count, modes.ptr(), nullptr) == ERROR_SUCCESS) {
-			data.sdr_white_level = _get_sdr_white_level_for_hmonitor(monitor, paths);
+			if (QueryDisplayConfig(QDC_ONLY_ACTIVE_PATHS, &path_count, paths.ptr(), &mode_count, modes.ptr(), nullptr) == ERROR_SUCCESS) {
+				data.sdr_white_level = _get_sdr_white_level_for_hmonitor(monitor, paths);
+			}
 		}
 	}
 
@@ -3451,16 +3454,22 @@ void DisplayServerWindows::_update_hdr_output_for_window(DisplayServerEnums::Win
 	if (rendering_context) {
 		bool current_hdr_enabled = rendering_context->window_get_hdr_output_enabled(p_window);
 		bool desired_hdr_enabled = p_window_data.hdr_output_requested && p_screen_data.hdr_supported;
+		bool hdr_state_changed = false;
 
 		if (current_hdr_enabled != desired_hdr_enabled) {
 			rendering_context->window_set_hdr_output_enabled(p_window, desired_hdr_enabled);
 			rendering_context->window_set_hdr_output_linear_luminance_scale(p_window, 80.0f);
+			hdr_state_changed = true;
 		}
 
 		// If auto reference luminance is enabled, update it based on the current SDR white level.
 		if (p_window_data.hdr_output_reference_luminance < 0.0f) {
 			if (p_screen_data.sdr_white_level > 0.0f) {
-				rendering_context->window_set_hdr_output_reference_luminance(p_window, p_screen_data.sdr_white_level);
+				float current_ref_luminance = rendering_context->window_get_hdr_output_reference_luminance(p_window);
+				if (!Math::is_equal_approx(current_ref_luminance, p_screen_data.sdr_white_level)) {
+					rendering_context->window_set_hdr_output_reference_luminance(p_window, p_screen_data.sdr_white_level);
+					hdr_state_changed = true;
+				}
 			}
 			// If we cannot get the SDR white level, leave the previous value unchanged.
 		}
@@ -3468,15 +3477,24 @@ void DisplayServerWindows::_update_hdr_output_for_window(DisplayServerEnums::Win
 		// If auto max luminance is enabled, update it based on the screen's max luminance.
 		if (p_window_data.hdr_output_max_luminance < 0.0f) {
 			if (p_screen_data.max_luminance > 0.0f) {
-				rendering_context->window_set_hdr_output_max_luminance(p_window, p_screen_data.max_luminance);
+				float current_max_luminance = rendering_context->window_get_hdr_output_max_luminance(p_window);
+				if (!Math::is_equal_approx(current_max_luminance, p_screen_data.max_luminance)) {
+					rendering_context->window_set_hdr_output_max_luminance(p_window, p_screen_data.max_luminance);
+					hdr_state_changed = true;
+				}
 			}
 			// If we cannot get the screen's max luminance, leave the previous value unchanged.
+		}
+
+		// Trigger HDR output changed event if any HDR parameter was modified.
+		if (hdr_state_changed) {
+			_send_window_event(p_window_data, DisplayServerEnums::WINDOW_EVENT_OUTPUT_MAX_LINEAR_VALUE_CHANGED);
 		}
 	}
 #endif // RD_ENABLED
 }
 
-void DisplayServerWindows::_update_hdr_output_for_tracked_windows() {
+void DisplayServerWindows::_update_hdr_output_for_tracked_windows(bool p_include_sdr_white_level) {
 	hdr_output_cache.clear();
 	for (const KeyValue<DisplayServerEnums::WindowID, WindowData> &E : windows) {
 		if (E.value.hdr_output_requested) {
@@ -3484,7 +3502,7 @@ void DisplayServerWindows::_update_hdr_output_for_tracked_windows() {
 
 			ScreenHdrData data;
 			if (!hdr_output_cache.has(screen)) {
-				data = _get_screen_hdr_data(screen);
+				data = _get_screen_hdr_data(screen, p_include_sdr_white_level);
 				hdr_output_cache.insert(screen, data);
 			} else {
 				data = hdr_output_cache[screen];
@@ -4045,24 +4063,26 @@ Key DisplayServerWindows::keyboard_get_label_from_physical(Key p_keycode) const 
 }
 
 void DisplayServerWindows::show_emoji_and_symbol_picker() const {
-	// Send Win + Period shortcut, there's no non-WinRT public API.
+	if (!WinRTUtils::try_show_onecore_emoji_picker()) {
+		// Send Win + Period shortcut.
 
-	INPUT input[4] = {};
-	input[0].type = INPUT_KEYBOARD; // Win down.
-	input[0].ki.wVk = VK_LWIN;
+		INPUT input[4] = {};
+		input[0].type = INPUT_KEYBOARD; // Win down.
+		input[0].ki.wVk = VK_LWIN;
 
-	input[1].type = INPUT_KEYBOARD; // Period down.
-	input[1].ki.wVk = VK_OEM_PERIOD;
+		input[1].type = INPUT_KEYBOARD; // Period down.
+		input[1].ki.wVk = VK_OEM_PERIOD;
 
-	input[2].type = INPUT_KEYBOARD; // Win up.
-	input[2].ki.wVk = VK_LWIN;
-	input[2].ki.dwFlags = KEYEVENTF_KEYUP;
+		input[2].type = INPUT_KEYBOARD; // Win up.
+		input[2].ki.wVk = VK_LWIN;
+		input[2].ki.dwFlags = KEYEVENTF_KEYUP;
 
-	input[3].type = INPUT_KEYBOARD; // Period up.
-	input[3].ki.wVk = VK_OEM_PERIOD;
-	input[3].ki.dwFlags = KEYEVENTF_KEYUP;
+		input[3].type = INPUT_KEYBOARD; // Period up.
+		input[3].ki.wVk = VK_OEM_PERIOD;
+		input[3].ki.dwFlags = KEYEVENTF_KEYUP;
 
-	SendInput(4, input, sizeof(INPUT));
+		SendInput(4, input, sizeof(INPUT));
+	}
 }
 
 String DisplayServerWindows::_get_keyboard_layout_display_name(const String &p_klid) const {
@@ -4182,7 +4202,16 @@ void DisplayServerWindows::process_events() {
 
 	// Poll HDR output state for windows that have requested it.
 	// Needed to detect changes in luminance values due to a lack of Windows events for such changes.
-	_update_hdr_output_for_tracked_windows();
+	// System-reported max luminance changes when the user adjust the screen brightness of a laptop
+	// with a built-in HDR screen. Additionally, some computers may continue to report a
+	// DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709 color space for a period of time after the
+	// WM_DISPLAYCHANGE event is received by Godot which means we must poll this regularly to
+	// capture this change in HDR capabilities of the screen triggered by the Win + Alt + B shortcut.
+	// The SDR white level (reference white luminance) does not need to be polled every frame
+	// because the only way to adjust this is to leave the Godot Window and adjust the SDR/HDR
+	// Content Brightness Windows display setting. This means the user must return to the Godot
+	// window, which triggers a WM_WINDOWPOSCHANGED event.
+	_update_hdr_output_for_tracked_windows(false);
 
 	LocalVector<List<FileDialogData *>::Element *> to_remove;
 	for (List<FileDialogData *>::Element *E = file_dialogs.front(); E; E = E->next()) {
@@ -4709,7 +4738,7 @@ bool DisplayServerWindows::window_is_hdr_output_supported(DisplayServerEnums::Wi
 
 	// The window supports HDR if the screen it is on supports HDR.
 	int screen = window_get_current_screen(p_window);
-	DisplayServerWindows::ScreenHdrData data = _get_screen_hdr_data(screen);
+	DisplayServerWindows::ScreenHdrData data = _get_screen_hdr_data(screen, false);
 	return data.hdr_supported;
 }
 
@@ -4724,7 +4753,7 @@ void DisplayServerWindows::window_request_hdr_output(const bool p_enable, Displa
 	wd.hdr_output_requested = p_enable;
 
 	int screen = window_get_current_screen(p_window);
-	DisplayServerWindows::ScreenHdrData data = _get_screen_hdr_data(screen);
+	DisplayServerWindows::ScreenHdrData data = _get_screen_hdr_data(screen, true);
 	_update_hdr_output_for_window(p_window, wd, data);
 }
 
@@ -4761,13 +4790,14 @@ void DisplayServerWindows::window_set_hdr_output_reference_luminance(const float
 	// Negative luminance means auto-adjust
 	if (wd.hdr_output_reference_luminance < 0.0f) {
 		int screen = window_get_current_screen(p_window);
-		DisplayServerWindows::ScreenHdrData data = _get_screen_hdr_data(screen);
+		DisplayServerWindows::ScreenHdrData data = _get_screen_hdr_data(screen, true);
 		_update_hdr_output_for_window(p_window, wd, data);
 	} else {
 		// Otherwise, apply the requested luminance
 #if defined(RD_ENABLED)
 		if (rendering_context) {
 			rendering_context->window_set_hdr_output_reference_luminance(p_window, p_reference_luminance);
+			_send_window_event(wd, DisplayServerEnums::WINDOW_EVENT_OUTPUT_MAX_LINEAR_VALUE_CHANGED);
 		}
 #endif
 	}
@@ -4806,13 +4836,14 @@ void DisplayServerWindows::window_set_hdr_output_max_luminance(const float p_max
 	// Negative luminance means auto-adjust
 	if (wd.hdr_output_max_luminance < 0.0f) {
 		int screen = window_get_current_screen(p_window);
-		DisplayServerWindows::ScreenHdrData data = _get_screen_hdr_data(screen);
+		DisplayServerWindows::ScreenHdrData data = _get_screen_hdr_data(screen, true);
 		_update_hdr_output_for_window(p_window, wd, data);
 	} else {
 		// Otherwise, apply the requested luminance
 #if defined(RD_ENABLED)
 		if (rendering_context) {
 			rendering_context->window_set_hdr_output_max_luminance(p_window, p_max_luminance);
+			_send_window_event(wd, DisplayServerEnums::WINDOW_EVENT_OUTPUT_MAX_LINEAR_VALUE_CHANGED);
 		}
 #endif
 	}
@@ -6325,7 +6356,7 @@ LRESULT DisplayServerWindows::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 
 		case WM_DISPLAYCHANGE: {
 			// Update HDR capabilities and reference luminance when display changes.
-			_update_hdr_output_for_tracked_windows();
+			_update_hdr_output_for_tracked_windows(true);
 		} break;
 
 		case WM_WINDOWPOSCHANGED: {
@@ -6425,9 +6456,6 @@ LRESULT DisplayServerWindows::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 					window.rect_changed_callback.call(Rect2i(window.last_pos.x, window.last_pos.y, window.width, window.height));
 				}
 
-				// Update HDR capabilities and reference luminance when window moves to different screen.
-				_update_hdr_output_for_tracked_windows();
-
 				// Update cursor clip region after window rect has changed.
 				if (mouse_mode == DisplayServerEnums::MOUSE_MODE_CAPTURED || mouse_mode == DisplayServerEnums::MOUSE_MODE_CONFINED || mouse_mode == DisplayServerEnums::MOUSE_MODE_CONFINED_HIDDEN) {
 					RECT crect;
@@ -6465,6 +6493,11 @@ LRESULT DisplayServerWindows::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 					}
 				}
 			}
+
+			// Update HDR capabilities and reference luminance when window moves to different screen.
+			// Also update when Godot has regained focus because the user may have adjusted their SDR white
+			// level while Godot was not in focus.
+			_update_hdr_output_for_tracked_windows(true);
 
 			// Return here to prevent WM_MOVE and WM_SIZE from being sent
 			// See: https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-windowposchanged#remarks

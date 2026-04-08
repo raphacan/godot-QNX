@@ -4360,6 +4360,7 @@ Size2i WaylandThread::window_set_size(DisplayServerEnums::WindowID p_window_id, 
 		new_size = new_size.min(ws.rect.size);
 	}
 
+#ifdef LIBDECOR_ENABLED
 	// NOTE: Older versions of libdecor (~2022) do not have a way to get the max
 	// content size. Let's also check for its pointer so that we can preserve
 	// compatibility with older distros.
@@ -4376,6 +4377,7 @@ Size2i WaylandThread::window_set_size(DisplayServerEnums::WindowID p_window_id, 
 			new_size.height = MIN(new_size.height, max_height);
 		}
 	}
+#endif
 
 	window_state_update_size(&ws, new_size.width, new_size.height);
 
@@ -4562,12 +4564,14 @@ bool WaylandThread::window_can_set_mode(DisplayServerEnums::WindowID p_window_id
 		};
 
 		case DisplayServerEnums::WINDOW_MODE_MAXIMIZED: {
+#ifdef LIBDECOR_ENABLED
 			if (ws.libdecor_frame) {
 				// NOTE: libdecor doesn't seem to have a maximize capability query?
 				// The fact that there's a fullscreen one makes me suspicious. Anyways,
 				// let's act as if we always can.
 				return true;
 			}
+#endif
 			return ws.can_maximize;
 		};
 
@@ -5254,6 +5258,28 @@ Error WaylandThread::init() {
 
 	thread_data.wl_display = wl_display;
 
+#ifdef LIBDECOR_ENABLED
+	bool libdecor_found = true;
+
+	bool skip_libdecor = OS::get_singleton()->get_environment("GODOT_WAYLAND_DISABLE_LIBDECOR") == "1";
+
+#ifdef SOWRAP_ENABLED
+	if (!skip_libdecor && initialize_libdecor(dylibloader_verbose) != 0) {
+		libdecor_found = false;
+	}
+#endif // SOWRAP_ENABLED
+
+	if (skip_libdecor) {
+		print_verbose("Skipping libdecor check because GODOT_WAYLAND_DISABLE_LIBDECOR is set to 1.");
+	} else {
+		if (libdecor_found) {
+			libdecor_context = libdecor_new(wl_display, (struct libdecor_interface *)&libdecor_interface);
+		} else {
+			print_verbose("libdecor not found. Client-side decorations disabled.");
+		}
+	}
+#endif // LIBDECOR_ENABLED
+
 	wl_registry = wl_display_get_registry(wl_display);
 
 	ERR_FAIL_NULL_V_MSG(wl_registry, ERR_UNAVAILABLE, "Can't obtain the Wayland registry global.");
@@ -5302,28 +5328,6 @@ Error WaylandThread::init() {
 	// Wait for seat capabilities.
 	// TODO: Async?
 	wl_display_roundtrip(wl_display);
-
-#ifdef LIBDECOR_ENABLED
-	bool libdecor_found = true;
-
-	bool skip_libdecor = OS::get_singleton()->get_environment("GODOT_WAYLAND_DISABLE_LIBDECOR") == "1";
-
-#ifdef SOWRAP_ENABLED
-	if (!skip_libdecor && initialize_libdecor(dylibloader_verbose) != 0) {
-		libdecor_found = false;
-	}
-#endif // SOWRAP_ENABLED
-
-	if (skip_libdecor) {
-		print_verbose("Skipping libdecor check because GODOT_WAYLAND_DISABLE_LIBDECOR is set to 1.");
-	} else {
-		if (libdecor_found) {
-			libdecor_context = libdecor_new(wl_display, (struct libdecor_interface *)&libdecor_interface);
-		} else {
-			print_verbose("libdecor not found. Client-side decorations disabled.");
-		}
-	}
-#endif // LIBDECOR_ENABLED
 
 	cursor_theme_name = OS::get_singleton()->get_environment("XCURSOR_THEME");
 

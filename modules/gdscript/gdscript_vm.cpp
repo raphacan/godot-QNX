@@ -648,8 +648,8 @@ Variant GDScriptFunction::call(GDScriptInstance *p_instance, const Variant **p_a
 			instruction_args = nullptr;
 		}
 
-		for (const KeyValue<int, Variant::Type> &E : temporary_slots) {
-			type_init_function_table[E.value](&stack[E.key]);
+		for (const Pair<int, Variant::Type> &E : temporary_slots) {
+			type_init_function_table[E.second](&stack[E.first]);
 		}
 	}
 
@@ -3813,7 +3813,10 @@ Variant GDScriptFunction::call(GDScriptInstance *p_instance, const Variant **p_a
 				int globalname_idx = _code_ptr[ip + 2];
 				GD_ERR_BREAK(globalname_idx < 0 || globalname_idx >= _global_names_count);
 				const StringName *globalname = &_global_names_ptr[globalname_idx];
-				GD_ERR_BREAK(!GDScriptLanguage::get_singleton()->get_named_globals_map().has(*globalname));
+				if (unlikely(!GDScriptLanguage::get_singleton()->get_named_globals_map().has(*globalname))) {
+					err_text = vformat(R"(Trying to access non-existent autoload singleton "%s".)", *globalname);
+					OPCODE_BREAK;
+				}
 
 				GET_VARIANT_PTR(dst, 0);
 				*dst = GDScriptLanguage::get_singleton()->get_named_globals_map()[*globalname];
