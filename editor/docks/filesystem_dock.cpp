@@ -464,6 +464,10 @@ void FileSystemDock::_update_tree(const Vector<String> &p_uncollapsed_paths, boo
 		ti->set_metadata(0, favorite);
 		ti->set_accept_children(false);
 
+		if (favorite == main_scene_path) {
+			ti->set_custom_color(0, get_theme_color(SNAME("accent_color"), EditorStringName(Editor)));
+		}
+
 		if (!favorite.ends_with("/")) {
 			EditorResourcePreview::get_singleton()->queue_resource_preview(favorite, callable_mp(this, &FileSystemDock::_tree_thumbnail_done).bind(tree_update_id, ti->get_instance_id()));
 		}
@@ -1716,6 +1720,10 @@ void FileSystemDock::_update_project_settings_after_move(const HashMap<String, S
 				ProjectSettings::get_singleton()->set_setting(E.name, "*" + p_renames[autoload_singleton]);
 			}
 		}
+	}
+
+	if (p_renames.has(main_scene_path)) {
+		main_scene_path = p_renames[main_scene_path];
 	}
 
 	// Update folder colors.
