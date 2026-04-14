@@ -1294,6 +1294,7 @@ void TextureStorage::texture_drawable_initialize(RID p_texture, int p_width, int
 	texture.depth = 1;
 	texture.format = image->get_format();
 	texture.validated_format = image->get_format();
+	texture.drawable_type = p_format;
 
 	texture.rd_type = RD::TEXTURE_TYPE_2D;
 	texture.rd_format = ret_format.format;
@@ -4044,7 +4045,6 @@ void TextureStorage::_create_render_target_backbuffer(RenderTarget *rt) {
 	tf.texture_type = RD::TEXTURE_TYPE_2D;
 	tf.usage_bits = RD::TEXTURE_USAGE_COLOR_ATTACHMENT_BIT | RD::TEXTURE_USAGE_STORAGE_BIT | RD::TEXTURE_USAGE_SAMPLING_BIT | RD::TEXTURE_USAGE_CAN_COPY_TO_BIT;
 	tf.mipmaps = mipmaps_required;
-	tf.is_discardable = true;
 
 	rt->backbuffer = RD::get_singleton()->texture_create(tf, RD::TextureView());
 	RD::get_singleton()->set_resource_name(rt->backbuffer, "Render Target Back Buffer");
@@ -4558,7 +4558,6 @@ void TextureStorage::_render_target_allocate_sdf(RenderTarget *rt) {
 	tformat.height = size.height;
 	tformat.usage_bits = RD::TEXTURE_USAGE_SAMPLING_BIT | RD::TEXTURE_USAGE_STORAGE_BIT | RD::TEXTURE_USAGE_COLOR_ATTACHMENT_BIT;
 	tformat.texture_type = RD::TEXTURE_TYPE_2D;
-	tformat.is_discardable = true;
 
 	rt->sdf_buffer_write = RD::get_singleton()->texture_create(tformat, RD::TextureView());
 
