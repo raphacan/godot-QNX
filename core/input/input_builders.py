@@ -20,6 +20,7 @@ def make_default_controller_mappings(target, source, env):
             "Mac OS X": "MACOS",
             "Android": "ANDROID",
             "iOS": "APPLE_EMBEDDED",
+            "QNX": "QNX",
             "Web": "WEB",
         }
 
