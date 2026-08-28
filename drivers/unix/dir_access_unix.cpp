@@ -186,7 +186,6 @@ String DirAccessUnix::get_next() {
 		_cisdir = (entry->d_type == DT_DIR);
 	}
 #endif
-#endif
 
 	_cishidden = is_hidden(fname);
 
