@@ -33,6 +33,24 @@ runs:
       shell: sh
       run: ${{ inputs.bin }} --headless --dump-gdextension-interface --dump-extension-api
 
+    - name: Set up ar wrapper for long argument lists
+      shell: bash
+      run: |
+        sudo tee /usr/local/bin/ar-wrapper > /dev/null << 'ARWRAPPER'
+        #!/bin/bash
+        # Use batched ar append + ranlib when the argument list would be too long.
+        if [[ "${1}" == r* ]] && (( $# > 400 )); then
+          target="$2"; shift 2
+          /usr/bin/ar rc "$target"
+          printf '%s\n' "$@" | xargs -n 200 /usr/bin/ar rq "$target"
+          ranlib "$target"
+        else
+          exec /usr/bin/ar "$@"
+        fi
+        ARWRAPPER
+        sudo chmod +x /usr/local/bin/ar-wrapper
+        sudo ln -sf /usr/local/bin/ar-wrapper /usr/bin/ar
+
     - name: SCons Build
       shell: sh
       env:
