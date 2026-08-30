@@ -36,16 +36,18 @@ runs:
     - name: Set up ar wrapper for long argument lists
       shell: bash
       run: |
+        # Save the real ar binary before replacing it with the wrapper.
+        sudo cp /usr/bin/ar /usr/bin/ar.real
         sudo tee /usr/local/bin/ar-wrapper > /dev/null << 'ARWRAPPER'
         #!/bin/bash
         # Use batched ar append + ranlib when the argument list would be too long.
         if [[ "${1}" == r* ]] && (( $# > 400 )); then
           target="$2"; shift 2
-          /usr/bin/ar rc "$target"
-          printf '%s\n' "$@" | xargs -n 200 /usr/bin/ar rq "$target"
+          /usr/bin/ar.real rc "$target"
+          printf '%s\n' "$@" | xargs -n 200 /usr/bin/ar.real rq "$target"
           ranlib "$target"
         else
-          exec /usr/bin/ar "$@"
+          exec /usr/bin/ar.real "$@"
         fi
         ARWRAPPER
         sudo chmod +x /usr/local/bin/ar-wrapper
