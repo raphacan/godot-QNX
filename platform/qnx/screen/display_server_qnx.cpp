@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  display_server_wayland.cpp                                            */
+/*  display_server_qnx.cpp                                                */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -1180,7 +1180,7 @@ ObjectID DisplayServerQnx::window_get_attached_instance_id(DisplayServerEnums::W
 	return windows[p_window_id].instance_id;
 }
 
-void DisplayServerQnx::window_set_rect_changed_callback(Callable const &p_callable, DisplayServerEnums::WindowID p_window_id) {
+void DisplayServerQnx::window_set_rect_changed_callback(const Callable &p_callable, DisplayServerEnums::WindowID p_window_id) {
 	_THREAD_SAFE_METHOD_
 
 	ERR_FAIL_COND(!windows.has(p_window_id));
@@ -1188,7 +1188,7 @@ void DisplayServerQnx::window_set_rect_changed_callback(Callable const &p_callab
 	windows[p_window_id].rect_changed_callback = p_callable;
 }
 
-void DisplayServerQnx::window_set_window_event_callback(Callable const &p_callable, DisplayServerEnums::WindowID p_window_id) {
+void DisplayServerQnx::window_set_window_event_callback(const Callable &p_callable, DisplayServerEnums::WindowID p_window_id) {
 	_THREAD_SAFE_METHOD_
 
 	ERR_FAIL_COND(!windows.has(p_window_id));
@@ -1212,7 +1212,7 @@ void DisplayServerQnx::window_set_input_text_callback(const Callable &p_callable
 	windows[p_window].input_text_callback = p_callable;
 }
 
-void DisplayServerQnx::window_set_drop_files_callback(Callable const &p_callable, DisplayServerEnums::WindowID p_window_id) {
+void DisplayServerQnx::window_set_drop_files_callback(const Callable &p_callable, DisplayServerEnums::WindowID p_window_id) {
 	_THREAD_SAFE_METHOD_
 
 	ERR_FAIL_COND(!windows.has(p_window_id));
@@ -1220,11 +1220,11 @@ void DisplayServerQnx::window_set_drop_files_callback(Callable const &p_callable
 	windows[p_window_id].drop_files_callback = p_callable;
 }
 
-void DisplayServerQnx::window_set_title(String const &, DisplayServerEnums::WindowID) {
+void DisplayServerQnx::window_set_title(const String &, DisplayServerEnums::WindowID) {
 	//
 }
 
-void DisplayServerQnx::window_set_mouse_passthrough(Vector<Vector2> const &, DisplayServerEnums::WindowID) {
+void DisplayServerQnx::window_set_mouse_passthrough(const Vector<Vector2> &, DisplayServerEnums::WindowID) {
 	DEBUG_LOG_QNX("window_set_mouse_passthrough is not supported on QNX.\n");
 }
 
