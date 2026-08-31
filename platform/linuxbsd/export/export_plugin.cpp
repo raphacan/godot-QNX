@@ -154,8 +154,9 @@ Error EditorExportPlatformLinuxBSD::export_project(const Ref<EditorExportPreset>
 	return err;
 }
 
-String EditorExportPlatformLinuxBSD::get_template_file_name(const String &p_target, const String &p_arch) const {
-	return "linux_" + p_target + "." + p_arch;
+String EditorExportPlatformLinuxBSD::get_template_file_name(const Ref<EditorExportPreset> &p_preset, const String &p_target) const {
+	String arch = p_preset->get("binary_format/architecture");
+	return "linux_" + p_target + "." + arch;
 }
 
 List<String> EditorExportPlatformLinuxBSD::get_binary_extensions(const Ref<EditorExportPreset> &p_preset) const {
