@@ -22,6 +22,10 @@ def get_name():
     return "QNX"
 
 
+def get_env_qnx_version():
+    return os.environ.get("QNX_SYSTEM_VERSION", "")
+
+
 def can_build():
     qnx_host = get_env_qnx_host()
     if qnx_host == "":
@@ -64,6 +68,7 @@ def get_opts():
         BoolVariable("use_tsan", "Use LLVM/GCC compiler thread sanitizer (TSAN)", False),
         BoolVariable("use_msan", "Use LLVM compiler memory sanitizer (MSAN)", False),
         BoolVariable("use_sowrap", "Dynamically load system libraries", True),
+        BoolVariable("use_version_suffix", "Use QNX version as suffix for the generated binaries", True),
         BoolVariable("alsa", "Use ALSA", False),
         BoolVariable("pulseaudio", "Use PulseAudio", False),
         BoolVariable("dbus", "Use D-Bus to handle screensaver and portal desktop settings", False),
@@ -171,6 +176,15 @@ def configure(env: "SConsEnvironment"):
     if env["use_coverage"]:
         env.Append(CCFLAGS=["-ftest-coverage", "-fprofile-arcs"])
         env.Append(LINKFLAGS=["-ftest-coverage", "-fprofile-arcs"])
+
+    if env["use_version_suffix"]:
+        qnx_version = get_env_qnx_version()
+        if qnx_version == "":
+            print_error("QNX_SYSTEM_VERSION environment variable not set!")
+            sys.exit(255)
+        else:
+            qnx_major_version = qnx_version.split(".")[0]
+            env.extra_suffix += f".qnx{qnx_major_version}"
 
     if env["use_ubsan"] or env["use_asan"] or env["use_lsan"] or env["use_tsan"] or env["use_msan"]:
         env.extra_suffix += ".san"
@@ -408,20 +422,6 @@ def configure(env: "SConsEnvironment"):
                 )
     # else:
     #   env.Append(CPPDEFINES=["XKB_ENABLED"])
-
-    if platform.system() == "Linux":
-        if env["udev"]:
-            if not env["use_sowrap"]:
-                if os.system("pkg-config --exists libudev") == 0:  # 0 means found
-                    env.ParseConfig("pkg-config libudev --cflags --libs")
-                    env.Append(CPPDEFINES=["UDEV_ENABLED"])
-                else:
-                    print_warning("libudev development libraries not found. Disabling controller hotplugging support.")
-                    env["udev"] = False
-            else:
-                env.Append(CPPDEFINES=["UDEV_ENABLED"])
-    else:
-        env["udev"] = False  # Linux specific
 
     # if env["sdl"]:
     #    if env["builtin_sdl"]:

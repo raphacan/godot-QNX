@@ -211,7 +211,7 @@ Error EditorExportPlatformWindows::export_project(const Ref<EditorExportPreset> 
 	String template_path = p_debug ? custom_debug : custom_release;
 	template_path = template_path.strip_edges();
 	if (template_path.is_empty()) {
-		template_path = find_export_template(get_template_file_name(p_debug ? "debug" : "release", arch));
+		template_path = find_export_template(get_template_file_name(p_preset, p_debug ? "debug" : "release"));
 	} else {
 		String exe_arch = _get_exe_arch(template_path);
 		if (arch != exe_arch) {
@@ -371,8 +371,9 @@ Error EditorExportPlatformWindows::export_project(const Ref<EditorExportPreset> 
 	return err;
 }
 
-String EditorExportPlatformWindows::get_template_file_name(const String &p_target, const String &p_arch) const {
-	return "windows_" + p_target + "_" + p_arch + ".exe";
+String EditorExportPlatformWindows::get_template_file_name(const Ref<EditorExportPreset> &p_preset, const String &p_target) const {
+	String arch = p_preset->get("binary_format/architecture");
+	return "windows_" + p_target + "_" + arch + ".exe";
 }
 
 List<String> EditorExportPlatformWindows::get_binary_extensions(const Ref<EditorExportPreset> &p_preset) const {

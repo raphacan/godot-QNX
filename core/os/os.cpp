@@ -613,6 +613,18 @@ bool OS::has_feature(const String &p_feature) {
 	}
 #endif
 
+#if defined(__QNX__)
+#if __QNX__ >= 800
+	if (p_feature == "qnx8") {
+		return true;
+	}
+#else
+	if (p_feature == "qnx7") {
+		return true;
+	}
+#endif
+#endif
+
 	if (p_feature == "threads") {
 #ifdef THREADS_ENABLED
 		return true;

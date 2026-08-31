@@ -83,7 +83,7 @@ public:
 	virtual bool get_export_option_visibility(const EditorExportPreset *p_preset, const String &p_option) const override;
 	virtual String get_export_option_warning(const EditorExportPreset *p_preset, const StringName &p_name) const override;
 
-	virtual String get_template_file_name(const String &p_target, const String &p_arch) const override;
+	virtual String get_template_file_name(const Ref<EditorExportPreset> &p_preset, const String &p_target) const override;
 	virtual Error fixup_embedded_pck(const String &p_path, int64_t p_embedded_start, int64_t p_embedded_size) override;
 
 	virtual void get_platform_features(List<String> *r_features) const override;

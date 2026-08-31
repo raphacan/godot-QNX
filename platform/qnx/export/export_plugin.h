@@ -70,12 +70,13 @@ class EditorExportPlatformQnx : public EditorExportPlatformPC {
 	String _get_exe_arch(const String &p_path) const;
 
 public:
+	virtual void get_preset_features(const Ref<EditorExportPreset> &p_preset, List<String> *r_features) const override;
 	virtual void get_export_options(List<ExportOption> *r_options) const override;
 	virtual List<String> get_binary_extensions(const Ref<EditorExportPreset> &p_preset) const override;
 	virtual bool get_export_option_visibility(const EditorExportPreset *p_preset, const String &p_option) const override;
 	virtual bool has_valid_export_configuration(const Ref<EditorExportPreset> &p_preset, String &r_error, bool &r_missing_templates, bool p_debug = false) const override;
 	virtual Error export_project(const Ref<EditorExportPreset> &p_preset, bool p_debug, const String &p_path, BitField<EditorExportPlatform::DebugFlags> p_flags = 0, bool p_notify = true) override;
-	virtual String get_template_file_name(const String &p_target, const String &p_arch) const override;
+	virtual String get_template_file_name(const Ref<EditorExportPreset> &p_preset, const String &p_target) const override;
 	virtual Error fixup_embedded_pck(const String &p_path, int64_t p_embedded_start, int64_t p_embedded_size) override;
 	virtual bool is_executable(const String &p_path) const override;
 

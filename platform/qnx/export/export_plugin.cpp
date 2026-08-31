@@ -154,8 +154,10 @@ Error EditorExportPlatformQnx::export_project(const Ref<EditorExportPreset> &p_p
 	return err;
 }
 
-String EditorExportPlatformQnx::get_template_file_name(const String &p_target, const String &p_arch) const {
-	return "qnx_" + p_target + "." + p_arch;
+String EditorExportPlatformQnx::get_template_file_name(const Ref<EditorExportPreset> &p_preset, const String &p_target) const {
+	String arch = p_preset->get("binary_format/architecture");
+	String qnx_version = p_preset->get("binary_format/qnx_version");
+	return qnx_version + "_" + p_target + "." + arch;
 }
 
 List<String> EditorExportPlatformQnx::get_binary_extensions(const Ref<EditorExportPreset> &p_preset) const {
@@ -186,10 +188,17 @@ bool EditorExportPlatformQnx::get_export_option_visibility(const EditorExportPre
 	return true;
 }
 
+void EditorExportPlatformQnx::get_preset_features(const Ref<EditorExportPreset> &p_preset, List<String> *r_features) const {
+	EditorExportPlatformPC::get_preset_features(p_preset, r_features);
+
+	r_features->push_back(p_preset->get("binary_format/qnx_version"));
+}
+
 void EditorExportPlatformQnx::get_export_options(List<ExportOption> *r_options) const {
 	EditorExportPlatformPC::get_export_options(r_options);
 
-	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "binary_format/architecture", PROPERTY_HINT_ENUM, "x86_64,x86_32,arm64,arm32"), "arm64"));
+	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "binary_format/architecture", PROPERTY_HINT_ENUM, "arm64,x86_64"), "arm64"));
+	r_options->push_back(ExportOption(PropertyInfo(Variant::STRING, "binary_format/qnx_version", PROPERTY_HINT_ENUM, "qnx7,qnx8"), "qnx7"));
 
 	String run_script = "#!/usr/bin/env bash\n"
 						"export DISPLAY=:0\n"
