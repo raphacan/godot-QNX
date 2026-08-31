@@ -34,7 +34,7 @@ runs:
       run: ${{ inputs.bin }} --headless --dump-gdextension-interface --dump-extension-api
 
     - name: SCons Build
-      shell: sh
+      shell: bash
       env:
         SCONS_CACHE: ${{ inputs.scons-cache }}
       run: |
