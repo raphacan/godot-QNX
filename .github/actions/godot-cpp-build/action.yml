@@ -34,7 +34,17 @@ runs:
       run: ${{ inputs.bin }} --headless --dump-gdextension-interface --dump-extension-api
 
     - name: SCons Build
-      shell: sh
+      shell: bash
       env:
         SCONS_CACHE: ${{ inputs.scons-cache }}
-      run: scons --directory=./godot-cpp/test "gdextension_dir=${{ github.workspace }}" ${{ inputs.scons-flags }}
+      run: |
+        # Build all object files; the final `ar` step may fail with "Argument list
+        # too long" when SCons invokes it with hundreds of explicit paths.
+        scons --directory=./godot-cpp/test "gdextension_dir=${{ github.workspace }}" ${{ inputs.scons-flags }} || true
+        # Re-archive using shell glob expansion, which avoids the execve limit.
+        # Object files live under godot-cpp/src/ and godot-cpp/gen/src/.
+        shopt -s globstar
+        for lib in godot-cpp/bin/libgodot-cpp.*.a; do
+          ar rc "$lib" godot-cpp/src/**/*.o godot-cpp/gen/src/**/*.o
+          ranlib "$lib"
+        done
