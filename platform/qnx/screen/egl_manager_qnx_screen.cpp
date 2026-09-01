@@ -30,8 +30,8 @@
 
 #include "egl_manager_qnx_screen.h"
 
-// #ifdef EGL_ENABLED // this seems to pull some dependencies to GLAD
-#ifdef QNX_ENABLED //
+#ifdef EGL_ENABLED
+#ifdef QNX_ENABLED
 
 const char *GLManagerEGL_Screen::_get_platform_extension_name() const {
 	return "EGL_QNX_platform_screen";
@@ -58,4 +58,6 @@ Vector<EGLint> GLManagerEGL_Screen::_get_platform_context_attribs() const {
 	return ret;
 }
 
+
+#endif // QNX_ENABLED
 #endif // EGL_ENABLED
