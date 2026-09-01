@@ -37,7 +37,7 @@
 #include "core/string/ustring.h"
 #include "drivers/gles3/rasterizer_util_gles3.h"
 
-#ifdef ANDROID_ENABLED
+#if defined(ANDROID_ENABLED) || defined(QNX_ENABLED)
 #include <platform_egl.h>
 #endif
 

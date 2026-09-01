@@ -11,7 +11,7 @@ if env["platform"] in ["macos", "windows", "linuxbsd", "qnx"]:
     env.Prepend(CPPPATH=[thirdparty_dir])
 
     env.Append(CPPDEFINES=["GLAD_ENABLED"])
-    if env["platform"] == "linuxbsd":
+    if env["platform"] in ["linuxbsd", "qnx"]:
         thirdparty_sources += ["egl.c"]
         env.Append(CPPDEFINES=["EGL_ENABLED", "GLAD_GLES2"])
     else:
