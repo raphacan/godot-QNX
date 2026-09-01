@@ -58,6 +58,7 @@
     (defined(__APPLE__) && defined(__MACH__)) ||                  \
     defined(__HAIKU__) ||                                         \
     defined(__midipix__) ||                                       \
+    defined(__QNX__) ||                                           \
     /* Add other Unix-like platform indicators here ^^^^ */ 0
 /* defined(MBEDTLS_PLATFORM_IS_UNIXLIKE) ==> we can include <unistd.h> */
 #define MBEDTLS_PLATFORM_IS_UNIXLIKE
