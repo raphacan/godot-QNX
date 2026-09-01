@@ -17,6 +17,10 @@
 		<member name="binary_format/embed_pck" type="bool" setter="" getter="">
 			If [code]true[/code], project resources are embedded into the executable.
 		</member>
+		<member name="binary_format/qnx_version" type="String" setter="" getter="">
+			QNX version for the export.
+			Supported versions: [code]qnx7[/code], [code]qnx8[/code].
+		</member>
 		<member name="custom_template/debug" type="String" setter="" getter="">
 			Path to the custom export template. If left empty, default template is used.
 		</member>
