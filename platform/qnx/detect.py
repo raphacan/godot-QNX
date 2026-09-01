@@ -1,5 +1,6 @@
 import os
 import platform
+import subprocess
 import sys
 from typing import TYPE_CHECKING
 
@@ -264,7 +265,7 @@ def configure(env: "SConsEnvironment"):
         env.Append(CPPDEFINES=["SOWRAP_ENABLED"])
 
     if env["wayland"]:
-        if os.system("wayland-scanner -v 2>/dev/null") != 0:
+        if not env.WhereIs("wayland-scanner"):
             print_warning("wayland-scanner not found. Disabling Wayland support.")
             env["wayland"] = False
 
@@ -283,7 +284,7 @@ def configure(env: "SConsEnvironment"):
         env.ParseConfig("pkg-config icu-i18n icu-uc --cflags --libs")
 
     if not env["builtin_harfbuzz"]:
-        env.ParseConfig("pkg-config harfbuzz harfbuzz-icu --cflags --libs")
+        env.ParseConfig("pkg-config harfbuzz harfbuzz-icu harfbuzz-raster harfbuzz-vector --cflags --libs")
 
     if not env["builtin_icu4c"] or not env["builtin_harfbuzz"]:
         print_warning(
@@ -336,12 +337,7 @@ def configure(env: "SConsEnvironment"):
         env.ParseConfig("pkg-config libturbojpeg --cflags --libs")
 
     if not env["builtin_mbedtls"]:
-        # mbedTLS only provides a pkgconfig file since 3.6.0, but we still support 2.28.x,
-        # so fallback to manually specifying LIBS if it fails.
-        if os.system("pkg-config --exists mbedtls") == 0:  # 0 means found
-            env.ParseConfig("pkg-config mbedtls mbedcrypto mbedx509 --cflags --libs")
-        else:
-            env.Append(LIBS=["mbedtls", "mbedcrypto", "mbedx509"])
+        env.ParseConfig("pkg-config mbedtls mbedcrypto mbedx509 --cflags --libs")
 
     if not env["builtin_wslay"]:
         env.ParseConfig("pkg-config libwslay --cflags --libs")
@@ -366,7 +362,7 @@ def configure(env: "SConsEnvironment"):
 
     if env["fontconfig"]:
         if not env["use_sowrap"]:
-            if os.system("pkg-config --exists fontconfig") == 0:  # 0 means found
+            if subprocess.run(["pkg-config", "--exists", "fontconfig"], capture_output=True).returncode == 0:
                 env.ParseConfig("pkg-config fontconfig --cflags --libs")
                 env.Append(CPPDEFINES=["FONTCONFIG_ENABLED"])
             else:
@@ -377,7 +373,7 @@ def configure(env: "SConsEnvironment"):
 
     if env["alsa"]:
         if not env["use_sowrap"]:
-            if os.system("pkg-config --exists alsa") == 0:  # 0 means found
+            if subprocess.run(["pkg-config", "--exists", "alsa"], capture_output=True).returncode == 0:
                 env.ParseConfig("pkg-config alsa --cflags --libs")
                 env.Append(CPPDEFINES=["ALSA_ENABLED", "ALSAMIDI_ENABLED"])
             else:
@@ -388,7 +384,7 @@ def configure(env: "SConsEnvironment"):
 
     if env["pulseaudio"]:
         if not env["use_sowrap"]:
-            if os.system("pkg-config --exists libpulse") == 0:  # 0 means found
+            if subprocess.run(["pkg-config", "--exists", "libpulse"], capture_output=True).returncode == 0:
                 env.ParseConfig("pkg-config libpulse --cflags --libs")
                 env.Append(CPPDEFINES=["PULSEAUDIO_ENABLED"])
             else:
@@ -399,7 +395,7 @@ def configure(env: "SConsEnvironment"):
 
     if env["speechd"]:
         if not env["use_sowrap"]:
-            if os.system("pkg-config --exists speech-dispatcher") == 0:  # 0 means found
+            if subprocess.run(["pkg-config", "--exists", "speech-dispatcher"], capture_output=True).returncode == 0:
                 env.ParseConfig("pkg-config speech-dispatcher --cflags --libs")
                 env.Append(CPPDEFINES=["SPEECHD_ENABLED"])
             else:
@@ -409,7 +405,7 @@ def configure(env: "SConsEnvironment"):
             env.Append(CPPDEFINES=["SPEECHD_ENABLED"])
 
     if not env["use_sowrap"]:
-        if os.system("pkg-config --exists xkbcommon") == 0:  # 0 means found
+        if subprocess.run(["pkg-config", "--exists", "xkbcommon"], capture_output=True).returncode == 0:
             env.ParseConfig("pkg-config xkbcommon --cflags --libs")
             env.Append(CPPDEFINES=["XKB_ENABLED"])
         else:
@@ -453,20 +449,20 @@ def configure(env: "SConsEnvironment"):
 
     if env["wayland"]:
         if not env["use_sowrap"]:
-            if os.system("pkg-config --exists libdecor-0"):
+            if subprocess.run(["pkg-config", "--exists", "libdecor-0"], capture_output=True).returncode != 0:
                 print_warning("libdecor development libraries not found. Disabling client-side decorations.")
                 env["libdecor"] = False
             else:
                 env.ParseConfig("pkg-config libdecor-0 --cflags --libs")
-            if os.system("pkg-config --exists wayland-client"):
+            if subprocess.run(["pkg-config", "--exists", "wayland-client"], capture_output=True).returncode != 0:
                 print_error("Wayland client library not found. Aborting.")
                 sys.exit(255)
             env.ParseConfig("pkg-config wayland-client --cflags --libs")
-            if os.system("pkg-config --exists wayland-cursor"):
+            if subprocess.run(["pkg-config", "--exists", "wayland-cursor"], capture_output=True).returncode != 0:
                 print_error("Wayland cursor library not found. Aborting.")
                 sys.exit(255)
             env.ParseConfig("pkg-config wayland-cursor --cflags --libs")
-            if os.system("pkg-config --exists wayland-egl"):
+            if subprocess.run(["pkg-config", "--exists", "wayland-egl"], capture_output=True).returncode != 0:
                 print_error("Wayland EGL library not found. Aborting.")
                 sys.exit(255)
             env.ParseConfig("pkg-config wayland-egl --cflags --libs")
@@ -500,9 +496,9 @@ def configure(env: "SConsEnvironment"):
             print_warning(
                 "The screen reader support driver requires dependencies to be installed.\n"
                 f"You can install them by running `python {os.path.join('misc', 'scripts', 'install_accesskit.py')}`.\n"
-                "See the documentation for more information:\n"
-                "\thttps://docs.godotengine.org/en/latest/engine_details/development/compiling/compiling_for_linuxbsd.html\n"
-                "Alternatively, disable this driver by compiling with `accesskit=no` explicitly."
+                "See the documentation for more information:\n\t"
+                "https://docs.godotengine.org/en/latest/engine_details/development/compiling/compiling_for_linuxbsd.html#compiling-with-accesskit-support"
+                "\nAlternatively, disable this driver by compiling with `accesskit=no` explicitly."
             )
             env["accesskit"] = False
 

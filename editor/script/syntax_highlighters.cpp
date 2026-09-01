@@ -355,7 +355,7 @@ void GDShaderSyntaxHighlighter::_update_cache() {
 	highlighter->add_color_region("/**/", "", comment_color, true);
 
 	// Disabled preprocessor branches use translucent text color to be easier to distinguish from comments.
-	set_disabled_branch_color(Color(EDITOR_GET("text_editor/theme/highlighting/text_color")) * Color(1, 1, 1, 0.5));
+	set_disabled_branch_color(EDITOR_GET("text_editor/theme/highlighting/text_color").operator Color() * Color(1, 1, 1, 0.5));
 
 	// Colorize preprocessor include strings.
 	const Color string_color = EDITOR_GET("text_editor/theme/highlighting/string_color");

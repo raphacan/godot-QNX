@@ -57,7 +57,7 @@ class GLManagerEGL_Screen;
 #endif
 
 class DisplayServerQnx : public DisplayServer {
-	GDCLASS(DisplayServerQnx, DisplayServer)
+	GDSOFTCLASS(DisplayServerQnx, DisplayServer)
 
 	_THREAD_SAFE_CLASS_
 
@@ -118,8 +118,6 @@ class DisplayServerQnx : public DisplayServer {
 	Rect2i _screen_get_rect(int p_screen) const;
 
 	DisplayServerEnums::WindowID _create_window(DisplayServerEnums::WindowMode p_mode, DisplayServerEnums::VSyncMode p_vsync_mode, uint32_t p_flags, const Rect2i &p_rect, screen_window_t p_parent_window);
-
-	int64_t _get_native_display_handle(DisplayServerEnums::WindowID p_window) const;
 
 	static int _godot_cursor_to_qnx_cursor(DisplayServerEnums::CursorShape p_shape);
 
@@ -252,7 +250,6 @@ public:
 
 	static void register_qnx_driver();
 
-	DisplayServerQnx(); // needed for gdextension
 	DisplayServerQnx(const String &p_rendering_driver, DisplayServerEnums::WindowMode p_mode, DisplayServerEnums::VSyncMode p_vsync_mode, uint32_t p_flags, const Vector2i *p_position, const Vector2i &p_resolution, int p_screen, DisplayServerEnums::Context p_context, int64_t p_parent_window, Error &r_error);
 	~DisplayServerQnx();
 
@@ -260,9 +257,6 @@ public:
 	static void _dispatch_input_events(const Ref<InputEvent> &p_event);
 	void _dispatch_input_event(const Ref<InputEvent> &p_event);
 	void _set_input_focus(DisplayServerEnums::WindowID p_window_id);
-
-protected:
-	static void _bind_methods();
 };
 
 #endif // QNX_ENABLED
