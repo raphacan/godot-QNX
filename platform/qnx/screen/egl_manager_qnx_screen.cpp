@@ -58,6 +58,5 @@ Vector<EGLint> GLManagerEGL_Screen::_get_platform_context_attribs() const {
 	return ret;
 }
 
-
 #endif // QNX_ENABLED
 #endif // EGL_ENABLED

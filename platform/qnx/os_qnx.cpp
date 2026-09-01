@@ -82,6 +82,9 @@
 #include <fontconfig/fontconfig.h>
 #endif
 #endif
+
+#include <fcntl.h>
+
 void OS_Qnx::alert(const String &p_alert, const String &p_title) {
 	const char *message_programs[] = { "zenity", "kdialog", "Xdialog", "xmessage" };
 
@@ -236,9 +239,7 @@ bool OS_Qnx::is_sandboxed() const {
 }
 
 void OS_Qnx::finalize() {
-	if (main_loop) {
-		memdelete(main_loop);
-	}
+	memdelete(main_loop);
 	main_loop = nullptr;
 
 #ifdef ALSAMIDI_ENABLED
@@ -246,9 +247,7 @@ void OS_Qnx::finalize() {
 #endif
 
 #ifdef SDL_ENABLED
-	if (joypad_sdl) {
-		memdelete(joypad_sdl);
-	}
+	memdelete(joypad_sdl);
 #endif
 }
 
@@ -257,9 +256,7 @@ MainLoop *OS_Qnx::get_main_loop() const {
 }
 
 void OS_Qnx::delete_main_loop() {
-	if (main_loop) {
-		memdelete(main_loop);
-	}
+	memdelete(main_loop);
 	main_loop = nullptr;
 }
 
@@ -476,7 +473,6 @@ Vector<String> OS_Qnx::lspci_device_filter(Vector<String> vendor_device_id_mappi
 
 Vector<String> OS_Qnx::lspci_get_device_value(Vector<String> vendor_device_id_mapping, String check_column, String blacklist) const {
 	// NOTE: blacklist can be changed to `Vector<String>`, if the need arises.
-	const String sep = ":";
 	Vector<String> values;
 	for (const String &mapping : vendor_device_id_mapping) {
 		String device;
@@ -994,6 +990,18 @@ String OS_Qnx::get_system_ca_certificates() {
 	return f->get_as_text();
 }
 
+Error OS_Qnx::get_entropy(uint8_t *r_buffer, int p_bytes) {
+	int r = open("/dev/urandom", O_RDWR);
+	ERR_FAIL_COND_V(r < 0, FAILED);
+	int left = p_bytes;
+	do {
+		ssize_t ret = read(r, r_buffer, p_bytes);
+		ERR_FAIL_COND_V(ret <= 0, FAILED);
+		left -= ret;
+	} while (left > 0);
+	return OK;
+}
+
 #ifdef TOOLS_ENABLED
 bool OS_Qnx::_test_create_rendering_device(const String &p_display_driver) const {
 	// Tests Rendering Device creation.
@@ -1097,9 +1105,12 @@ OS_Qnx::~OS_Qnx() {
 #ifdef FONTCONFIG_ENABLED
 	if (object_set) {
 		FcObjectSetDestroy(object_set);
+		object_set = nullptr;
 	}
 	if (config) {
+		FcConfigSetCurrent(nullptr);
 		FcConfigDestroy(config);
+		config = nullptr;
 	}
 #endif // FONTCONFIG_ENABLED
 }
