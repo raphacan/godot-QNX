@@ -234,6 +234,25 @@ inline uint32 GetNextPowerOf2(uint32 inValue)
 	return inValue <= 1? uint32(1) : uint32(1) << (32 - CountLeadingZeros(inValue - 1));
 }
 
+#if defined(__GNUC__) && (__GNUC__ < 12)
+// Simple implementation of C++20 std::bit_cast (unfortunately not constexpr)
+template <class To, class From>
+JPH_INLINE To BitCast(const From &inValue)
+{
+	static_assert(std::is_trivially_constructible_v<To>);
+	static_assert(sizeof(From) == sizeof(To));
+
+	union FromTo
+	{
+		To			mTo;
+		From		mFrom;
+	};
+
+	FromTo convert;
+	convert.mFrom = inValue;
+	return convert.mTo;
+}
+#else
 /// Simple implementation of C++20 std::bit_cast
 template <class To, class From>
 JPH_INLINE constexpr To BitCast(const From &inValue)
@@ -242,5 +261,6 @@ JPH_INLINE constexpr To BitCast(const From &inValue)
 	static_assert(sizeof(From) == sizeof(To));
 	return __builtin_bit_cast(To, inValue);
 }
+#endif
 
 JPH_NAMESPACE_END
