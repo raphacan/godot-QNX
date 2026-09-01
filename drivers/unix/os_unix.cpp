@@ -72,6 +72,10 @@
 #include <uvm/uvm_extern.h>
 #endif
 
+#if defined(__QNX__)
+#include <fcntl.h>
+#endif
+
 #include <dlfcn.h>
 #include <poll.h>
 #include <sys/resource.h>
