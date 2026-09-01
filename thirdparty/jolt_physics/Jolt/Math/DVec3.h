@@ -274,7 +274,7 @@ public:
 	static JPH_INLINE Type		sFixW(TypeArg inValue);
 
 	/// Representations of true and false for boolean operations
-	inline static constexpr double	cTrue = BitCast<double>(~uint64(0));
+	inline static const double	cTrue = BitCast<double>(~uint64(0));
 	inline static constexpr double	cFalse = 0.0;
 
 	union
