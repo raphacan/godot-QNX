@@ -257,6 +257,7 @@ public:
 	static void _dispatch_input_events(const Ref<InputEvent> &p_event);
 	void _dispatch_input_event(const Ref<InputEvent> &p_event);
 	void _set_input_focus(DisplayServerEnums::WindowID p_window_id);
+	Error _wait_for_screen_device();
 };
 
 #endif // QNX_ENABLED
