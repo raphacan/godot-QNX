@@ -401,7 +401,7 @@ int64_t DisplayServerQnx::window_get_native_handle(DisplayServerEnums::HandleTyp
 	ERR_FAIL_COND_V(!windows.has(p_window), 0);
 	switch (p_handle_type) {
 		case DisplayServerEnums::DISPLAY_HANDLE: {
-			return _get_native_display_handle(p_window);
+			return (int64_t)m_screenContext;
 		} break;
 
 		case DisplayServerEnums::WINDOW_HANDLE: {
@@ -437,20 +437,6 @@ int64_t DisplayServerQnx::window_get_native_handle(DisplayServerEnums::HandleTyp
 			return 0;
 		} break;
 	}
-}
-
-int64_t DisplayServerQnx::_get_native_display_handle(DisplayServerEnums::WindowID p_window) const {
-	_THREAD_SAFE_METHOD_
-
-	ERR_FAIL_COND_V(!windows.has(p_window), 0);
-
-	const WindowData &wd = windows[p_window];
-
-	screen_display_t display = nullptr;
-	int res = screen_get_window_property_pv(wd.screen_window, SCREEN_PROPERTY_DISPLAY, reinterpret_cast<void **>(&display));
-	ERR_FAIL_COND_V_MSG(res != 0, 0, "Can't acquire display information from window.");
-
-	return (int64_t)display;
 }
 
 int DisplayServerQnx::window_get_current_screen(DisplayServerEnums::WindowID p_window_id) const {
@@ -766,14 +752,6 @@ DisplayServer *DisplayServerQnx::create_func(const String &p_rendering_driver, D
 		return nullptr;
 	}
 	return ds;
-}
-
-DisplayServerQnx::DisplayServerQnx() {
-	// empty on purpose: only for gdextension
-}
-
-void DisplayServerQnx::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("get_qnx_screen_context"), &DisplayServerQnx::get_qnx_screen_context);
 }
 
 DisplayServerQnx::DisplayServerQnx(const String &p_rendering_driver, DisplayServerEnums::WindowMode p_mode, DisplayServerEnums::VSyncMode p_vsync_mode, uint32_t p_flags, const Vector2i *p_position, const Vector2i &p_resolution, int p_screen, DisplayServerEnums::Context p_context, int64_t p_parent_window, Error &r_error) {
