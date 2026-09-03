@@ -539,6 +539,7 @@ public:
 		float max_lod = 1e20; // Something very large should do.
 		SamplerBorderColor border_color = SAMPLER_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
 		bool unnormalized_uvw = false;
+		bool enable_ycbcr_conversion = false;
 	};
 
 	/**********************/

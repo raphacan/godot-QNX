@@ -587,6 +587,7 @@ Error RenderingDeviceDriverVulkan::_initialize_device_extensions() {
 	_register_requested_device_extension(VK_NV_RAY_TRACING_VALIDATION_EXTENSION_NAME, false);
 	_register_requested_device_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME, false);
 	_register_requested_device_extension(VK_KHR_RAY_QUERY_EXTENSION_NAME, false);
+	_register_requested_device_extension(VK_KHR_SAMPLER_YCBCR_CONVERSION_EXTENSION_NAME, false);
 
 	// We don't actually use this extension, but some runtime components on some platforms
 	// can and will fill the validation layers with useless info otherwise if not enabled.
@@ -1109,6 +1110,10 @@ Error RenderingDeviceDriverVulkan::_check_device_capabilities() {
 		if (enabled_device_extension_names.has(VK_KHR_RAY_QUERY_EXTENSION_NAME)) {
 			ray_query_support = ray_query_features.rayQuery;
 		}
+
+		if (enabled_device_extension_names.has(VK_KHR_SAMPLER_YCBCR_CONVERSION_EXTENSION_NAME)) {
+			ycbcr_conversion_support = true;
+		}
 	}
 
 	if (functions.GetPhysicalDeviceProperties2 != nullptr) {
@@ -1462,6 +1467,14 @@ Error RenderingDeviceDriverVulkan::_initialize_device(const LocalVector<VkDevice
 		ray_query_features.pNext = create_info_next;
 		ray_query_features.rayQuery = ray_query_support;
 		create_info_next = &ray_query_features;
+	}
+
+	VkPhysicalDeviceSamplerYcbcrConversionFeatures ycbcr_features = {};
+	if (ycbcr_conversion_support) {
+		ycbcr_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES;
+		ycbcr_features.samplerYcbcrConversion = VK_TRUE;
+		ycbcr_features.pNext = create_info_next;
+		create_info_next = &ycbcr_features;
 	}
 
 	VkPhysicalDeviceVulkan11Features vulkan_1_1_features = {};
@@ -2511,6 +2524,15 @@ RDD::TextureID RenderingDeviceDriverVulkan::texture_create_from_extension(uint64
 	image_view_create_info.subresourceRange.layerCount = p_array_layers;
 	image_view_create_info.subresourceRange.aspectMask = p_depth_stencil ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 
+	// TODO add proper planar format check
+	if (p_format == DATA_FORMAT_G8_B8R8_2PLANE_420_UNORM) {
+		VkSamplerYcbcrConversionInfo vk_conversion_chain = {};
+		vk_conversion_chain.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO;
+		vk_conversion_chain.conversion = _get_or_create_ycbcr_conversion();
+
+		image_view_create_info.pNext = &vk_conversion_chain;
+	}
+
 	VkImageView vk_image_view = VK_NULL_HANDLE;
 	VkResult err = vkCreateImageView(vk_device, &image_view_create_info, VKC::get_allocation_callbacks(VK_OBJECT_TYPE_IMAGE_VIEW), &vk_image_view);
 	if (err) {
@@ -2829,6 +2851,14 @@ RDD::SamplerID RenderingDeviceDriverVulkan::sampler_create(const SamplerState &p
 	sampler_create_info.borderColor = (VkBorderColor)p_state.border_color;
 	sampler_create_info.unnormalizedCoordinates = p_state.unnormalized_uvw;
 
+	if (p_state.enable_ycbcr_conversion) {
+		VkSamplerYcbcrConversionInfo vk_conversion_chain = {};
+		vk_conversion_chain.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO;
+		vk_conversion_chain.conversion = _get_or_create_ycbcr_conversion();
+
+		sampler_create_info.pNext = &vk_conversion_chain;
+	}
+
 	VkSampler vk_sampler = VK_NULL_HANDLE;
 	VkResult res = vkCreateSampler(vk_device, &sampler_create_info, VKC::get_allocation_callbacks(VK_OBJECT_TYPE_SAMPLER), &vk_sampler);
 	ERR_FAIL_COND_V_MSG(res, SamplerID(), vformat("Couldn't create Vulkan sampler (VkResult error %d).", res));
@@ -2852,6 +2882,33 @@ bool RenderingDeviceDriverVulkan::sampler_is_format_supported_for_filter(DataFor
 		}
 	}
 	return false;
+}
+
+VkSamplerYcbcrConversion RenderingDeviceDriverVulkan::_get_or_create_ycbcr_conversion() {
+	if (vk_ycbcr_conversion != VK_NULL_HANDLE) {
+		return vk_ycbcr_conversion;
+	}
+
+	VkSamplerYcbcrConversionCreateInfo conversion_info = {};
+	conversion_info.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO;
+	conversion_info.format = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
+	conversion_info.ycbcrModel = VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_601;
+	conversion_info.ycbcrRange = VK_SAMPLER_YCBCR_RANGE_ITU_FULL;
+	conversion_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+	conversion_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+	conversion_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+	conversion_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+	conversion_info.xChromaOffset = VK_CHROMA_LOCATION_COSITED_EVEN;
+	conversion_info.yChromaOffset = VK_CHROMA_LOCATION_COSITED_EVEN;
+	conversion_info.chromaFilter = VK_FILTER_NEAREST;
+	conversion_info.forceExplicitReconstruction = VK_FALSE;
+
+	VkResult err = vkCreateSamplerYcbcrConversion(vk_device, &conversion_info, VKC::get_allocation_callbacks(VK_OBJECT_TYPE_SAMPLER_YCBCR_CONVERSION_KHR), &vk_ycbcr_conversion);
+	if (err) {
+		ERR_FAIL_COND_V_MSG(err, VK_NULL_HANDLE, "vkCreateSamplerYcbcrConversion failed with error " + itos(err) + ".");
+	}
+
+	return vk_ycbcr_conversion;
 }
 
 /**********************/
@@ -7556,6 +7613,10 @@ RenderingDeviceDriverVulkan::~RenderingDeviceDriverVulkan() {
 				vkDestroyDescriptorPool(vk_device, descriptor_pool.key, VKC::get_allocation_callbacks(VK_OBJECT_TYPE_DESCRIPTOR_POOL));
 			}
 		}
+	}
+
+	if (vk_ycbcr_conversion != VK_NULL_HANDLE) {
+		vkDestroySamplerYcbcrConversion(vk_device, vk_ycbcr_conversion, VKC::get_allocation_callbacks(VK_OBJECT_TYPE_SAMPLER_YCBCR_CONVERSION_KHR));
 	}
 
 	if (vk_device != VK_NULL_HANDLE) {
