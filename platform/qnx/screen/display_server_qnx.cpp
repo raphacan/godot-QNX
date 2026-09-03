@@ -61,6 +61,8 @@
 #include "drivers/gles3/rasterizer_gles3.h"
 #endif
 
+#include <libgen.h> // waitfor
+
 static EGLNativeDisplayType DEFAULT_DISPLAY_ID = EGL_DEFAULT_DISPLAY;
 static const int DEFAULT_SCREEN_DPI = 96;
 
@@ -754,10 +756,36 @@ DisplayServer *DisplayServerQnx::create_func(const String &p_rendering_driver, D
 	return ds;
 }
 
+Error DisplayServerQnx::_wait_for_screen_device() {
+	constexpr int poll_ms = 20; // 20 ms poll interval
+	constexpr int delay_ms = 10000; // 10 sec timeout
+
+	const char *screen_device = getenv("SCREEN_DEVICE_NAME");
+
+	if (NULL == screen_device) {
+		// Screen device name is not set so we can proceed
+		print_line("Not waiting for screen device since \"SCREEN_DEVICE_NAME\" is not declared");
+		return OK;
+	}
+
+	print_line(vformat("Waiting for screen device: %s", screen_device));
+	int res = waitfor(screen_device, delay_ms, poll_ms);
+	ERR_FAIL_COND_V_MSG(res != 0, ERR_UNAVAILABLE, vformat("Screen device %s NOT available", screen_device));
+
+	print_line(vformat("Screen device is available"));
+	return OK;
+}
+
 DisplayServerQnx::DisplayServerQnx(const String &p_rendering_driver, DisplayServerEnums::WindowMode p_mode, DisplayServerEnums::VSyncMode p_vsync_mode, uint32_t p_flags, const Vector2i *p_position, const Vector2i &p_resolution, int p_screen, DisplayServerEnums::Context p_context, int64_t p_parent_window, Error &r_error) {
 	r_error = ERR_UNAVAILABLE;
 
 	default_display = &DEFAULT_DISPLAY_ID;
+
+	Error wait_err = _wait_for_screen_device();
+	if (wait_err != OK) {
+		r_error = wait_err;
+		ERR_FAIL_MSG("QNX Screen device not available.");
+	}
 
 	int res = screen_create_context(&m_screenContext, SCREEN_BUFFER_PROVIDER_CONTEXT);
 	if (0 != res) {
