@@ -73,7 +73,9 @@ extern "C" EGLAPI EGLDisplay EGLAPIENTRY eglGetPlatformDisplayEXT(EGLenum platfo
 
 #ifdef __QNX__
 // Although EGL 1.5 is available on QNX, the platform extensions do not work
+// most probably a vendor-specific issue
 #define GLAD_EGL_VERSION_1_5 false
+#define GLAD_EGL_EXT_platform_base 0
 #endif
 
 // Creates and caches a GLDisplay. Returns -1 on error.
@@ -528,7 +530,7 @@ Error EGLManager::initialize(void *p_native_display) {
 	String client_extensions_string = eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
 
 	// If the above method fails, we don't support client extensions, so there's nothing to check.
-	if (eglGetError() == EGL_SUCCESS) {
+	if ((eglGetError() == EGL_SUCCESS) && (GLAD_EGL_EXT_platform_base)) {
 		const char *platform = _get_platform_extension_name();
 		if (!client_extensions_string.split(" ").has(platform)) {
 			ERR_FAIL_V_MSG(ERR_UNAVAILABLE, vformat("EGL platform extension \"%s\" not found.", platform));
