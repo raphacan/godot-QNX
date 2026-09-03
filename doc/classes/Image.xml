@@ -822,7 +822,7 @@
 		<constant name="FORMAT_ASTC_6x6_HDR" value="48" enum="Format">
 			Same format as [constant FORMAT_ASTC_6x6], but with the hint to let the GPU know it is used for HDR.
 		</constant>
-		<constant name="FORMAT_MAX" value="49" enum="Format">
+		<constant name="FORMAT_MAX" value="50" enum="Format">
 			Represents the size of the [enum Format] enum.
 		</constant>
 		<constant name="INTERPOLATE_NEAREST" value="0" enum="Interpolation">

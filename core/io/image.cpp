@@ -90,6 +90,7 @@ const char *Image::format_names[Image::FORMAT_MAX] = {
 	"RGBA16Int",
 	"ASTC_6x6",
 	"ASTC_6x6_HDR",
+	"FORMAT_G8_B8R8_2PLANE_420_UNORM",
 };
 
 // External VRAM compression function pointers.
@@ -233,6 +234,8 @@ int Image::get_format_pixel_size(Format p_format) {
 			return 6;
 		case FORMAT_RGBA16I:
 			return 8;
+		case FORMAT_G8_B8R8_2PLANE_420_UNORM:
+			return 2;
 		case FORMAT_MAX: {
 		}
 	}

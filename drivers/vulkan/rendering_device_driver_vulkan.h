@@ -167,6 +167,7 @@ class RenderingDeviceDriverVulkan : public RenderingDeviceDriver {
 	RaytracingCapabilities raytracing_capabilities;
 	bool pipeline_cache_control_support = false;
 	bool device_fault_support = false;
+	bool ycbcr_conversion_support = false;
 	bool framebuffer_depth_resolve = false;
 #if defined(VK_TRACK_DEVICE_MEMORY)
 	bool device_memory_report_support = false;
@@ -312,6 +313,10 @@ public:
 	virtual SamplerID sampler_create(const SamplerState &p_state) final override;
 	virtual void sampler_free(SamplerID p_sampler) final override;
 	virtual bool sampler_is_format_supported_for_filter(DataFormat p_format, SamplerFilter p_filter) override final;
+
+private:
+	VkSamplerYcbcrConversion _get_or_create_ycbcr_conversion();
+	VkSamplerYcbcrConversion vk_ycbcr_conversion = VK_NULL_HANDLE;
 
 	/**********************/
 	/**** VERTEX ARRAY ****/
