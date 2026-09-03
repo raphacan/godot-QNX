@@ -771,6 +771,10 @@ void ShaderGLES3::initialize(const String &p_general_defines, int p_base_texture
 
 	_init();
 
+	GLES3::Config *config = GLES3::Config::get_singleton();
+	ERR_FAIL_NULL(config);
+	max_image_units = config->max_texture_image_units;
+
 	if (shader_cache_dir != String()) {
 		StringBuilder hash_build;
 
@@ -805,10 +809,6 @@ void ShaderGLES3::initialize(const String &p_general_defines, int p_base_texture
 
 		print_verbose("Shader '" + name + "' SHA256: " + base_sha256);
 	}
-
-	GLES3::Config *config = GLES3::Config::get_singleton();
-	ERR_FAIL_NULL(config);
-	max_image_units = config->max_texture_image_units;
 }
 
 void ShaderGLES3::set_shader_cache_dir(const String &p_dir) {
