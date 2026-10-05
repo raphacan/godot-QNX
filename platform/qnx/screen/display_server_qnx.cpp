@@ -1039,7 +1039,7 @@ DisplayServerEnums::WindowID DisplayServerQnx::_create_window(DisplayServerEnums
 
 	int res = 0;
 
-	const int window_type = (p_flags & DisplayServerEnums::WINDOW_FLAG_POPUP) ? SCREEN_CHILD_WINDOW : SCREEN_APPLICATION_WINDOW;
+	const int window_type = (p_flags & DisplayServerEnums::WINDOW_FLAG_POPUP_BIT) ? SCREEN_CHILD_WINDOW : SCREEN_APPLICATION_WINDOW;
 	res = screen_create_window_type(&wd.screen_window, m_screenContext, window_type);
 	ERR_FAIL_COND_V_MSG(0 != res, DisplayServerEnums::INVALID_WINDOW_ID, "screen_create_window() failed");
 
