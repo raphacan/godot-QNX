@@ -8,6 +8,9 @@ on:
         required: true
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build-qnx:
     runs-on: ubuntu-24.04
