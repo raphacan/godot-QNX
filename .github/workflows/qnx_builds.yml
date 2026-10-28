@@ -1,0 +1,57 @@
+name: 🖥️ QNX Builds
+on:
+  workflow_call:
+    secrets:
+      QNX_CONTAINER_USERNAME:
+        required: true
+      QNX_CONTAINER_PASSWORD:
+        required: true
+  workflow_dispatch:
+
+jobs:
+  build-qnx:
+    runs-on: ubuntu-24.04
+    name: ${{ matrix.name }}
+    timeout-minutes: 120
+    container:
+      image: ${{ vars.QNX_CONTAINER_IMAGE }}
+      credentials:
+        username: ${{ secrets.QNX_CONTAINER_USERNAME }}
+        password: ${{ secrets.QNX_CONTAINER_PASSWORD }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Template release (arch=arm32)
+            target: template_release
+            arch: arm32
+          - name: Template debug (arch=arm32)
+            target: template_debug
+            arch: arm32
+          - name: Template release (arch=arm64)
+            target: template_release
+            arch: arm64
+          - name: Template debug (arch=arm64)
+            target: template_debug
+            arch: arm64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Setup Python and SCons
+        uses: ./.github/actions/godot-deps
+
+      - name: Compilation
+        uses: ./.github/actions/godot-build
+        with:
+          platform: qnx
+          target: ${{ matrix.target }}
+          scons-flags: dev_mode=yes module_text_server_fb_enabled=yes arch=${{ matrix.arch }}
+
+      - name: Upload artifact
+        uses: ./.github/actions/upload-artifact
+        with:
+          name: qnx-${{ matrix.arch }}-${{ matrix.target }}
