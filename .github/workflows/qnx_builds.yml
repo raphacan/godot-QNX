@@ -1,0 +1,90 @@
+name: 🚘 QNX Builds
+on:
+  workflow_call:
+  workflow_dispatch:
+
+# Global Settings
+env:
+  SCONS_FLAGS: >-
+    dev_mode=yes
+    module_text_server_fb_enabled=yes
+
+jobs:
+  build-qnx:
+    runs-on: ubuntu-24.04
+    name: ${{ matrix.name }}
+    timeout-minutes: 120
+    # Private image providing the QCC compiler and the QNX SDP (QNX_HOST, QNX_TARGET, QNX_SYSTEM_VERSION).
+    container:
+      image: ${{ vars.QNX_DOCKER_IMAGE }}
+      credentials:
+        username: ${{ secrets.QNX_DOCKER_USERNAME }}
+        password: ${{ secrets.QNX_DOCKER_PASSWORD }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Editor (target=editor, arch=x86_64)
+            cache-name: qnx-editor-x86_64
+            target: editor
+            scons-flags: arch=x86_64
+            artifact: true
+
+          - name: Template release (target=template_release, arch=arm64)
+            cache-name: qnx-template-arm64
+            target: template_release
+            scons-flags: arch=arm64
+            artifact: true
+
+          - name: Template debug (target=template_debug, arch=arm64)
+            cache-name: qnx-template-debug-arm64
+            target: template_debug
+            scons-flags: arch=arm64
+            artifact: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Verify QCC toolchain
+        run: |
+          echo "QNX_HOST=$QNX_HOST"
+          echo "QNX_TARGET=$QNX_TARGET"
+          echo "QNX_SYSTEM_VERSION=$QNX_SYSTEM_VERSION"
+          qcc -V || qcc --version
+
+      - name: Restore Godot build cache
+        uses: ./.github/actions/godot-cache-restore
+        with:
+          cache-name: ${{ matrix.cache-name }}
+        continue-on-error: true
+
+      - name: Setup Python and SCons
+        uses: ./.github/actions/godot-deps
+
+      - name: Compilation
+        uses: ./.github/actions/godot-build
+        with:
+          scons-flags: ${{ env.SCONS_FLAGS }} ${{ matrix.scons-flags }}
+          platform: qnx
+          target: ${{ matrix.target }}
+
+      - name: Save Godot build cache
+        uses: ./.github/actions/godot-cache-save
+        with:
+          cache-name: ${{ matrix.cache-name }}
+        continue-on-error: true
+
+      - name: Prepare artifact
+        if: matrix.artifact
+        run: |
+          rm -rf ./bin/build_deps
+          chmod +x bin/godot.*
+
+      - name: Upload artifact
+        uses: ./.github/actions/upload-artifact
+        if: matrix.artifact
+        with:
+          name: ${{ matrix.cache-name }}

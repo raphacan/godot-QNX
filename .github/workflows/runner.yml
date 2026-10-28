@@ -37,6 +37,13 @@ jobs:
     with:
       changed-files: ${{ needs.static-checks.outputs.changed-files }}
 
+  qnx-build:
+    name: 🚘 QNX
+    needs: static-checks
+    if: needs.static-checks.outputs.sources-changed == 'true' || github.event_name != 'pull_request'
+    uses: ./.github/workflows/qnx_builds.yml
+    secrets: inherit
+
   macos-build:
     name: 🍎 macOS
     needs: static-checks
